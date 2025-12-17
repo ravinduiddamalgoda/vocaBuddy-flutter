@@ -208,51 +208,118 @@ class DoctorHomeScreen extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 18),
+
+              // Assign Activities card
+              GestureDetector(
+                onTap: () => _go(context, '/attempt-session'),
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEED6),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              "Attempt Activity",
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF5A4332),
+                              ),
+                            ),
+                            SizedBox(height: 6),
+                            Text(
+                              "Complete today’s assigned\nactivities at your own pace",
+                              style: TextStyle(
+                                fontSize: 12,
+                                height: 1.5,
+                                color: Color(0xFF8A6E5A),
+                              ),
+                            ),
+                            SizedBox(height: 14),
+                            Text(
+                              "Start Now  ▶",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFF6D00),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 74,
+                        height: 74,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFFA726),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+
               const Spacer(),
             ],
           ),
         ),
       ),
 
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(26),
-            topRight: Radius.circular(26),
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 10,
-              offset: Offset(0, -2),
-              color: Color(0x1A000000),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _NavItem(
-              icon: Icons.home_filled,
-              isActive: true,
-              onTap: () {},
-            ),
-            _NavItem(
-              icon: Icons.video_call_rounded,
-              onTap: () => _go(context, '/sessions'),
-            ),
-            _NavItem(
-              icon: Icons.chat_bubble_outline_rounded,
-              onTap: () => _go(context, '/chat'),
-            ),
-            _NavItem(
-              icon: Icons.person_outline_rounded,
-              onTap: () => _go(context, '/account'),
-            ),
-          ],
-        ),
-      ),
+      // bottomNavigationBar: Container(
+      //   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      //   decoration: const BoxDecoration(
+      //     color: Colors.white,
+      //     borderRadius: BorderRadius.only(
+      //       topLeft: Radius.circular(26),
+      //       topRight: Radius.circular(26),
+      //     ),
+      //     boxShadow: [
+      //       BoxShadow(
+      //         blurRadius: 10,
+      //         offset: Offset(0, -2),
+      //         color: Color(0x1A000000),
+      //       ),
+      //     ],
+      //   ),
+      //   child: Row(
+      //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //     children: [
+      //       _NavItem(
+      //         icon: Icons.home_filled,
+      //         isActive: true,
+      //         onTap: () {},
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.video_call_rounded,
+      //         onTap: () => _go(context, '/sessions'),
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.chat_bubble_outline_rounded,
+      //         onTap: () => _go(context, '/chat'),
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.person_outline_rounded,
+      //         onTap: () => _go(context, '/account'),
+      //       ),
+      //     ],
+      //   ),
+      // ),
     );
   }
 }
