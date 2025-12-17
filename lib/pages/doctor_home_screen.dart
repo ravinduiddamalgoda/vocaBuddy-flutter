@@ -210,15 +210,16 @@ class DoctorHomeScreen extends StatelessWidget {
 
               const SizedBox(height: 18),
 
-              // ✅ NEW: Voice Therapy card
+
+              // Assign Activities card
               GestureDetector(
-                onTap: () => _go(context, '/voice-therapy'),
+                onTap: () => _go(context, '/attempt-session'),
                 child: Container(
                   width: double.infinity,
                   padding:
                   const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3E5F5),
+                    color: const Color(0xFFFFEED6),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Row(
@@ -228,40 +229,30 @@ class DoctorHomeScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
                             Text(
-                              "Voice Therapy",
+                              "Attempt Activity",
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF4A148C),
+                                color: Color(0xFF5A4332),
                               ),
                             ),
                             SizedBox(height: 6),
                             Text(
-                              "Add words and record correct &\nincorrect pronunciations",
+                              "Complete today’s assigned\nactivities at your own pace",
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.5,
-                                color: Color(0xFF7B5E8B),
+                                color: Color(0xFF8A6E5A),
                               ),
                             ),
                             SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Text(
-                                  "Insert Voice Notes",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF8E24AA),
-                                  ),
-                                ),
-                                SizedBox(width: 6),
-                                Icon(
-                                  Icons.mic_rounded,
-                                  size: 18,
-                                  color: Color(0xFF8E24AA),
-                                ),
-                              ],
+                            Text(
+                              "Start Now  ▶",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFF6D00),
+                              ),
                             ),
                           ],
                         ),
@@ -270,12 +261,12 @@ class DoctorHomeScreen extends StatelessWidget {
                         width: 74,
                         height: 74,
                         decoration: const BoxDecoration(
-                          color: Color(0xFF8E24AA),
+                          color: Color(0xFFFFA726),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.record_voice_over_rounded,
-                          size: 38,
+                          Icons.play_arrow_rounded,
+                          size: 40,
                           color: Colors.white,
                         ),
                       ),
@@ -284,51 +275,52 @@ class DoctorHomeScreen extends StatelessWidget {
                 ),
               ),
 
+
               const Spacer(),
             ],
           ),
         ),
       ),
 
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(26),
-            topRight: Radius.circular(26),
-          ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 10,
-              offset: Offset(0, -2),
-              color: Color(0x1A000000),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _NavItem(
-              icon: Icons.home_filled,
-              isActive: true,
-              onTap: () {},
-            ),
-            _NavItem(
-              icon: Icons.video_call_rounded,
-              onTap: () => _go(context, '/sessions'),
-            ),
-            _NavItem(
-              icon: Icons.chat_bubble_outline_rounded,
-              onTap: () => _go(context, '/chat'),
-            ),
-            _NavItem(
-              icon: Icons.person_outline_rounded,
-              onTap: () => _go(context, '/account'),
-            ),
-          ],
-        ),
-      ),
+      // bottomNavigationBar: Container(
+      //   padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+      //   decoration: const BoxDecoration(
+      //     color: Colors.white,
+      //     borderRadius: BorderRadius.only(
+      //       topLeft: Radius.circular(26),
+      //       topRight: Radius.circular(26),
+      //     ),
+      //     boxShadow: [
+      //       BoxShadow(
+      //         blurRadius: 10,
+      //         offset: Offset(0, -2),
+      //         color: Color(0x1A000000),
+      //       ),
+      //     ],
+      //   ),
+      //   child: Row(
+      //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //     children: [
+      //       _NavItem(
+      //         icon: Icons.home_filled,
+      //         isActive: true,
+      //         onTap: () {},
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.video_call_rounded,
+      //         onTap: () => _go(context, '/sessions'),
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.chat_bubble_outline_rounded,
+      //         onTap: () => _go(context, '/chat'),
+      //       ),
+      //       _NavItem(
+      //         icon: Icons.person_outline_rounded,
+      //         onTap: () => _go(context, '/account'),
+      //       ),
+      //     ],
+      //   ),
+      // ),
     );
   }
 }
