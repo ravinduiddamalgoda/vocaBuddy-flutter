@@ -1,5 +1,6 @@
 // ai_assistant_page.dart
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 
 class AIAssistantPage extends StatefulWidget {
   final Map<String, dynamic> childData;
@@ -62,17 +63,30 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     _messageController.clear();
     _scrollToBottom();
 
-    // Simulate AI response delay
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    // Call the real API
+    ApiService.askQuestion(text).then((answer) {
       setState(() {
         _messages.add({
-          'text': _getAIResponse(text),
+          'text': answer,
           'isUser': false,
           'timestamp': DateTime.now(),
         });
         _isTyping = false;
       });
       _scrollToBottom();
+    }).catchError((error) {
+      setState(() {
+        _messages.add({
+          'text': 'Sorry, I encountered an error: ${error.toString()}',
+          'isUser': false,
+          'timestamp': DateTime.now(),
+        });
+        _isTyping = false;
+      });
+      _scrollToBottom();
+
+      // Show error dialog
+      _showErrorDialog(context, error.toString());
     });
   }
 
@@ -88,33 +102,24 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     });
   }
 
-  String _getAIResponse(String question) {
-    final childName = widget.childData['name'];
-    final accuracy = widget.childData['accuracy'];
-    final sessions = widget.childData['sessions'];
-    final totalSessions = widget.childData['totalSessions'];
-
-    final lowerQuestion = question.toLowerCase();
-
-    if (lowerQuestion.contains('progress') || lowerQuestion.contains('doing')) {
-      return '$childName is showing excellent progress! Their pronunciation accuracy is currently at $accuracy%, and they\'ve completed $sessions out of $totalSessions sessions. They\'re particularly strong with vowel sounds and are making steady improvements in other areas. Keep up the great work! 🎉';
-    } else if (lowerQuestion.contains('improve') || lowerQuestion.contains('need') || lowerQuestion.contains('focus')) {
-      return 'Based on the latest assessments, $childName would benefit from additional practice with R sounds. Here are some focus areas:\n\n• R sounds: Practice words like "red," "run," "rabbit"\n• Blending exercises for consonant clusters\n• Daily 10-minute practice sessions\n\nWould you like specific activity recommendations?';
-    } else if (lowerQuestion.contains('activit') || lowerQuestion.contains('practice') || lowerQuestion.contains('exercise')) {
-      return 'Here are some fun activity suggestions for $childName:\n\n🪞 **Mirror Practice**: Have them watch their mouth movements while pronouncing challenging sounds.\n\n🔍 **Sound Scavenger Hunt**: Find objects around the house that start with target sounds.\n\n🎵 **Rhyme Time**: Create rhyming games with target sounds to make practice enjoyable.\n\n📚 **Story Reading**: Read books emphasizing the focus sounds.\n\nWould you like more detailed instructions for any of these?';
-    } else if (lowerQuestion.contains('score') || lowerQuestion.contains('result') || lowerQuestion.contains('accuracy')) {
-      return 'Here\'s a breakdown of $childName\'s latest scores:\n\n📊 Overall accuracy: $accuracy%\n🎯 Vowel sounds: 85% (Excellent!)\n📈 S sounds: 75% (Good progress)\n📉 R sounds: 60% (Needs focus)\n✨ T sounds: 80% (Very good)\n\nThey completed $sessions out of $totalSessions sessions this period, showing great consistency!';
-    } else if (lowerQuestion.contains('how long') || lowerQuestion.contains('time')) {
-      return 'The typical therapy timeline varies, but based on $childName\'s current progress at $accuracy% accuracy, here\'s what to expect:\n\n⏱️ Short-term (1-2 months): Focus on targeted sounds\n📅 Medium-term (3-6 months): Consistent improvement across categories\n🎯 Long-term (6-12 months): Achieving 90%+ accuracy\n\nConsistency is key! Daily 10-15 minute practice sessions make a huge difference.';
-    } else if (lowerQuestion.contains('help') || lowerQuestion.contains('support')) {
-      return 'There are many ways you can support $childName at home:\n\n💬 Practice daily conversations focusing on target sounds\n👂 Listen actively and provide positive reinforcement\n📖 Read together and emphasize pronunciation\n🎮 Make it fun with games and activities\n⏰ Keep practice sessions short (10-15 mins) but consistent\n\nRemember, you\'re doing a great job! Every bit of practice helps.';
-    } else if (lowerQuestion.contains('when') || lowerQuestion.contains('schedule')) {
-      return 'For $childName, I recommend:\n\n🌅 **Morning sessions** (5-10 mins): Light warm-up exercises\n🏫 **After school** (10-15 mins): Main practice session\n🌙 **Bedtime** (5 mins): Quick review with a story\n\nThey\'ve been completing their sessions well - $sessions out of $totalSessions done! Keep maintaining this consistency.';
-    } else if (lowerQuestion.contains('thank') || lowerQuestion.contains('thanks')) {
-      return 'You\'re welcome! I\'m always here to help. Remember, you\'re doing an amazing job supporting $childName\'s progress. If you have any other questions, feel free to ask! 😊';
-    } else {
-      return 'I\'d be happy to help with that! I can discuss:\n\n📊 Progress reports and analytics\n🎯 Activity and exercise suggestions\n📈 Score explanations\n💡 Tips for home practice\n⏰ Session scheduling advice\n\nWhat specific information about $childName would you like to know?';
-    }
+  void _showErrorDialog(BuildContext context, String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Connection Error'),
+        content: Text(
+          error,
+          style: const TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -575,7 +580,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('About AI Assistant'),
         content: const Text(
-          'This AI assistant helps you understand your child\'s speech therapy progress, suggests activities, and answers questions about their development.\n\nNote: This is a demo version with simulated responses.',
+          'This AI assistant helps you understand your child\'s speech therapy progress, suggests activities, and answers questions about their development.\n\nThis assistant uses AI to provide personalized responses based on speech therapy knowledge.',
           style: TextStyle(height: 1.5),
         ),
         actions: [

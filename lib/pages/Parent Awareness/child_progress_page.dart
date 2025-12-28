@@ -11,9 +11,9 @@ class ChildProgressPage extends StatefulWidget {
   State<ChildProgressPage> createState() => _ChildProgressPageState();
 }
 
-class _ChildProgressPageState extends State<ChildProgressPage> {
-  String selectedTimeRange = 'Last 4 Weeks';
-  final List<String> timeRanges = ['Last 4 Weeks', 'Last 8 Weeks', 'Last 12 Weeks'];
+class _ChildProgressPageState extends State<ChildProgressPage> with SingleTickerProviderStateMixin {
+  AnimationController? _animationController;
+  Animation<double>? _animation;
 
   // Sample data for charts
   final List<Map<String, dynamic>> progressData = [
@@ -23,11 +23,32 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
     {'week': 'Week 4', 'accuracy': 78},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController!,
+      curve: Curves.easeInOutCubic,
+    );
+    _animationController!.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController?.dispose();
+    super.dispose();
+  }
+
   final List<Map<String, dynamic>> categoryData = [
-    {'category': 'Vowels', 'score': 85, 'color': Color(0xFF22C55E)},
-    {'category': 'S Sounds', 'score': 75, 'color': Color(0xFFFF9800)},
-    {'category': 'R Sounds', 'score': 60, 'color': Color(0xFFEF4444)},
-    {'category': 'T Sounds', 'score': 80, 'color': Color(0xFF3B82F6)},
+    {'category': 'S Sounds', 'score': 85, 'color': Color(0xFF22C55E), 'level': 'Excellent'},
+    {'category': 'R Sounds', 'score': 75, 'color': Color(0xFF3B82F6), 'level': 'Good'},
+    {'category': 'T Sounds', 'score': 60, 'color': Color(0xFFFF9800), 'level': 'Fair'},
+    {'category': 'K Sounds', 'score': 45, 'color': Color(0xFFEF4444), 'level': 'Needs Practice'},
+    {'category': 'N Sounds', 'score': 78, 'color': Color(0xFF3B82F6), 'level': 'Good'},
   ];
 
   @override
@@ -119,75 +140,13 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
               ),
               const SizedBox(height: 32),
 
-              // Time Range Selector
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 12,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: timeRanges.map((range) {
-                    final isSelected = selectedTimeRange == range;
-                    return Expanded(
-                      child: InkWell(
-                        onTap: () => setState(() => selectedTimeRange = range),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFFFF4E6) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            range.replaceAll('Last ', ''),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                              color: isSelected ? const Color(0xFFFF9800) : const Color(0xFF94A3B8),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Progress Over Time Chart
-              _buildChartCard(
-                title: 'Progress Over Time',
-                subtitle: 'Pronunciation accuracy improvement',
-                icon: Icons.show_chart,
-                child: _buildLineChart(),
-              ),
-              const SizedBox(height: 16),
-
-              // Word Category Performance
-              _buildChartCard(
-                title: 'Word Category Performance',
-                subtitle: 'Performance by phoneme groups',
-                icon: Icons.bar_chart,
-                child: _buildBarChart(),
-              ),
-              const SizedBox(height: 16),
-
               // Session Stats Row
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatCard(
+                    child: _buildDonutStatCard(
                       'Session Completion',
-                      '${completionRate.toInt()}%',
+                      completionRate,
                       '${child['sessions']}/${child['totalSessions']} completed',
                       Icons.check_circle_outline,
                       const Color(0xFF22C55E),
@@ -209,13 +168,25 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
               ),
               const SizedBox(height: 16),
 
-              // Average Score Trend
+              // Progress Over Time Chart
               _buildChartCard(
-                title: 'Average Score Trend',
-                subtitle: 'Overall performance across activities',
-                icon: Icons.trending_up,
-                child: _buildAreaChart(),
+                title: 'Progress Over Time',
+                subtitle: 'Pronunciation accuracy improvement',
+                icon: Icons.show_chart,
+                child: _buildLineChart(),
               ),
+              const SizedBox(height: 16),
+
+              // Word Category Performance
+              _buildChartCard(
+                title: 'Word Category Performance',
+                subtitle: 'Performance by phoneme groups',
+                icon: Icons.bar_chart,
+                child: _buildBarChart(),
+              ),
+              const SizedBox(height: 16),
+
+              // Session Stats Row (moved below)
               const SizedBox(height: 16),
 
               // Insights Card
@@ -270,13 +241,13 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
                     _buildInsightItem(
                       '🎯',
                       'Strong Area',
-                      'Vowel sounds show excellent performance at 85%.',
+                      'S sounds show excellent performance at 85%.',
                     ),
                     const SizedBox(height: 12),
                     _buildInsightItem(
                       '💪',
                       'Focus Area',
-                      'R sounds need more practice. Consider additional exercises.',
+                      'K sounds need more practice. Consider additional exercises.',
                     ),
                   ],
                 ),
@@ -359,56 +330,11 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
   }
 
   Widget _buildLineChart() {
-    final maxAccuracy = progressData.map((d) => d['accuracy'] as int).reduce(math.max);
-
     return SizedBox(
       height: 200,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: List.generate(progressData.length, (index) {
-          final data = progressData[index];
-          final accuracy = data['accuracy'] as int;
-          final height = (accuracy / maxAccuracy) * 160;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    '$accuracy%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFFFF9800),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: height,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    data['week'].toString().replaceAll('Week ', 'W'),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: Color(0xFF94A3B8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }),
+      child: CustomPaint(
+        painter: _LineChartPainter(progressData),
+        child: Container(),
       ),
     );
   }
@@ -417,71 +343,233 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
     final maxScore = categoryData.map((d) => d['score'] as int).reduce(math.max);
 
     return Column(
-      children: categoryData.map((data) {
-        final score = data['score'] as int;
-        final width = (score / maxScore) * 100;
+      children: [
+        ...categoryData.map((data) {
+          final score = data['score'] as int;
+          final width = (score / maxScore) * 100;
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    data['category'],
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF64748B),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      data['category'],
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                      ),
                     ),
-                  ),
-                  Text(
-                    '$score%',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: data['color'],
+                    Text(
+                      '$score%',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: data['color'],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Stack(
-                children: [
-                  Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  FractionallySizedBox(
-                    widthFactor: width / 100,
-                    child: Container(
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Stack(
+                  children: [
+                    Container(
                       height: 8,
                       decoration: BoxDecoration(
-                        color: data['color'],
+                        color: const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
-                  ),
+                    FractionallySizedBox(
+                      widthFactor: width / 100,
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: data['color'],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        const SizedBox(height: 20),
+        // Performance level legend
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Performance Levels',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  _buildLegendItem('Excellent', const Color(0xFF22C55E), '80-100%'),
+                  _buildLegendItem('Good', const Color(0xFF3B82F6), '70-79%'),
+                  _buildLegendItem('Fair', const Color(0xFFFF9800), '50-69%'),
+                  _buildLegendItem('Needs Practice', const Color(0xFFEF4444), '0-49%'),
                 ],
               ),
             ],
           ),
-        );
-      }).toList(),
+        ),
+      ],
     );
   }
 
-  Widget _buildAreaChart() {
-    return SizedBox(
-      height: 180,
-      child: CustomPaint(
-        painter: AreaChartPainter(progressData),
-        child: Container(),
+  Widget _buildLegendItem(String label, Color color, String range) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$label ($range)',
+          style: const TextStyle(
+            fontSize: 11,
+            color: Color(0xFF64748B),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDonutStatCard(
+      String title,
+      double percentage,
+      String subtitle,
+      IconData icon,
+      Color iconColor,
+      Color bgColor,
+      ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: _animation != null
+                ? AnimatedBuilder(
+              animation: _animation!,
+              builder: (context, child) {
+                return SizedBox(
+                  width: 120,
+                  height: 120,
+                  child: CustomPaint(
+                    painter: _DonutChartPainter(
+                      percentage: percentage * _animation!.value,
+                      color: iconColor,
+                      backgroundColor: bgColor,
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${(percentage * _animation!.value).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF334155),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Complete',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: iconColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            )
+                : const SizedBox(
+              width: 120,
+              height: 120,
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -510,37 +598,64 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(10),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 20),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF334155),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Average',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: iconColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
             ),
-            child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF94A3B8),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF334155),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF94A3B8),
+          Center(
+            child: Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -586,69 +701,90 @@ class _ChildProgressPageState extends State<ChildProgressPage> {
   }
 }
 
-class AreaChartPainter extends CustomPainter {
+class _LineChartPainter extends CustomPainter {
   final List<Map<String, dynamic>> data;
 
-  AreaChartPainter(this.data);
+  _LineChartPainter(this.data);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          const Color(0xFFFF9800).withOpacity(0.3),
-          const Color(0xFFFF9800).withOpacity(0.05),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
+    if (data.isEmpty) return;
+
+    final maxAccuracy = data.map((d) => d['accuracy'] as int).reduce(math.max);
+    final minAccuracy = data.map((d) => d['accuracy'] as int).reduce(math.min);
+    final range = maxAccuracy - minAccuracy;
+
+    // Add padding to the chart
+    final chartHeight = size.height - 50;
+    final chartWidth = size.width - 40;
+    final leftPadding = 20.0;
+    final topPadding = 30.0;
 
     final linePaint = Paint()
       ..color = const Color(0xFFFF9800)
       ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final gridPaint = Paint()
+      ..color = const Color(0xFFE2E8F0)
+      ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    final path = Path();
+    // Draw horizontal grid lines
+    for (int i = 0; i <= 4; i++) {
+      final y = topPadding + (chartHeight / 4) * i;
+      canvas.drawLine(
+        Offset(leftPadding, y),
+        Offset(leftPadding + chartWidth, y),
+        gridPaint,
+      );
+    }
+
+    // Draw line path
     final linePath = Path();
-
-    final maxAccuracy = data.map((d) => d['accuracy'] as int).reduce(math.max);
-    final stepX = size.width / (data.length - 1);
-
-    path.moveTo(0, size.height);
-    linePath.moveTo(0, size.height - (data[0]['accuracy'] / maxAccuracy * size.height));
+    final stepX = chartWidth / (data.length - 1);
 
     for (int i = 0; i < data.length; i++) {
-      final x = i * stepX;
-      final y = size.height - (data[i]['accuracy'] / maxAccuracy * size.height);
+      final x = leftPadding + i * stepX;
+      final normalizedValue = range > 0
+          ? (data[i]['accuracy'] - minAccuracy) / range
+          : 0.5;
+      final y = topPadding + chartHeight - (normalizedValue * chartHeight);
 
       if (i == 0) {
-        path.lineTo(x, y);
+        linePath.moveTo(x, y);
       } else {
-        path.lineTo(x, y);
         linePath.lineTo(x, y);
       }
     }
 
-    path.lineTo(size.width, size.height);
-    path.close();
-
-    canvas.drawPath(path, paint);
     canvas.drawPath(linePath, linePaint);
 
-    // Draw points
-    for (int i = 0; i < data.length; i++) {
-      final x = i * stepX;
-      final y = size.height - (data[i]['accuracy'] / maxAccuracy * size.height);
+    // Draw points and labels
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    );
 
+    for (int i = 0; i < data.length; i++) {
+      final x = leftPadding + i * stepX;
+      final normalizedValue = range > 0
+          ? (data[i]['accuracy'] - minAccuracy) / range
+          : 0.5;
+      final y = topPadding + chartHeight - (normalizedValue * chartHeight);
+
+      // Draw outer white circle
       canvas.drawCircle(
         Offset(x, y),
-        5,
+        6,
         Paint()
           ..color = Colors.white
           ..style = PaintingStyle.fill,
       );
 
+      // Draw inner orange circle
       canvas.drawCircle(
         Offset(x, y),
         4,
@@ -656,9 +792,87 @@ class AreaChartPainter extends CustomPainter {
           ..color = const Color(0xFFFF9800)
           ..style = PaintingStyle.fill,
       );
+
+      // Draw value label above point
+      textPainter.text = TextSpan(
+        text: '${data[i]['accuracy']}%',
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFFFF9800),
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(x - textPainter.width / 2, y - 22),
+      );
+
+      // Draw week label below chart
+      textPainter.text = TextSpan(
+        text: data[i]['week'].toString().replaceAll('Week ', 'W'),
+        style: const TextStyle(
+          fontSize: 11,
+          color: Color(0xFF94A3B8),
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(x - textPainter.width / 2, topPadding + chartHeight + 10),
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _DonutChartPainter extends CustomPainter {
+  final double percentage;
+  final Color color;
+  final Color backgroundColor;
+
+  _DonutChartPainter({
+    required this.percentage,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2;
+    final strokeWidth = 12.0;
+
+    // Draw background circle
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius - strokeWidth / 2, backgroundPaint);
+
+    // Draw progress arc
+    final progressPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final sweepAngle = (percentage / 100) * 2 * math.pi;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
+      -math.pi / 2, // Start from top
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
+    return oldDelegate.percentage != percentage;
+  }
 }
