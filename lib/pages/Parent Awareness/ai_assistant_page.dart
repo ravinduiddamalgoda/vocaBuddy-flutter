@@ -1,6 +1,7 @@
 // ai_assistant_page.dart
 import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
+import 'dart:math' as math;
 
 class AIAssistantPage extends StatefulWidget {
   final Map<String, dynamic> childData;
@@ -20,20 +21,20 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
   // Quick question suggestions
   final List<Map<String, String>> _quickQuestions = [
     {
-      'icon': '📊',
-      'question': 'How is my child progressing?',
+      'icon': 'trending_up',
+      'question': 'මගේ දරුවාගේ ප්‍රගතිය කෙසේද?',
     },
     {
-      'icon': '🎯',
-      'question': 'What areas need improvement?',
+      'icon': 'flag',
+      'question': 'වැඩි දියුණු කළ යුතු ක්ෂේත්‍ර මොනවාද?',
     },
     {
-      'icon': '💡',
-      'question': 'Suggest activities for practice',
+      'icon': 'lightbulb',
+      'question': 'පුහුණුවීම් ක්‍රියාකාරකම් යෝජනා කරන්න',
     },
     {
-      'icon': '📈',
-      'question': 'Explain the latest scores',
+      'icon': 'bar_chart',
+      'question': 'නවතම ලකුණු පැහැදිලි කරන්න',
     },
   ];
 
@@ -42,7 +43,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     super.initState();
     // Add welcome message
     _messages.add({
-      'text': 'Hello! I\'m your AI assistant for ${widget.childData['name']}. I can help you understand their progress, suggest activities, and answer questions about their speech development. How can I help you today?',
+      'text': 'ආයුබෝවන්! මම ${widget.childData['name']}ට සහාය වන AI සහායකයා. ඔවුන්ගේ ප්‍රගතිය තේරුම් ගැනීමට, ක්‍රියාකාරකම් යෝජනා කිරීමට සහ කථන සංවර්ධනය පිළිබඳ ප්‍රශ්නවලට පිළිතුරු දීමට මට හැකියාව ඇත. අද මම ඔබට කෙසේ උදව් කළ හැකිද?',
       'isUser': false,
       'timestamp': DateTime.now(),
     });
@@ -77,7 +78,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     }).catchError((error) {
       setState(() {
         _messages.add({
-          'text': 'Sorry, I encountered an error: ${error.toString()}',
+          'text': 'සමාවන්න, දෝෂයක් ඇති විය: ${error.toString()}',
           'isUser': false,
           'timestamp': DateTime.now(),
         });
@@ -107,7 +108,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Connection Error'),
+        title: const Text('සම්බන්ධතා දෝෂයක්'),
         content: Text(
           error,
           style: const TextStyle(height: 1.5),
@@ -115,7 +116,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            child: const Text('හරි'),
           ),
         ],
       ),
@@ -127,13 +128,20 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF5F7FA),
         elevation: 0,
         leading: Container(
           margin: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
+            color: Colors.white,
             shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: Color(0xFF64748B), size: 20),
@@ -147,16 +155,13 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: const Color(0xFFF0FDF4),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF22C55E), width: 2),
               ),
               child: const Icon(
-                Icons.smart_toy_outlined,
-                color: Colors.white,
+                Icons.lightbulb_outline,
+                color: Color(0xFF64748B),
                 size: 22,
               ),
             ),
@@ -165,7 +170,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'AI Assistant',
+                  'AI සහායක',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -173,7 +178,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                   ),
                 ),
                 Text(
-                  'Online',
+                  'ක්‍රියාත්මකයි',
                   style: TextStyle(
                     fontSize: 11,
                     color: Color(0xFF22C55E),
@@ -224,7 +229,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFFF0FDF4),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -237,11 +242,11 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Quick Questions',
+            'ඉක්මන් ප්‍රශ්න',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF94A3B8),
+              color: Color(0xFF64748B),
             ),
           ),
           const SizedBox(height: 12),
@@ -249,24 +254,43 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             spacing: 8,
             runSpacing: 8,
             children: _quickQuestions.map((q) {
+              IconData icon;
+              switch (q['icon']) {
+                case 'trending_up':
+                  icon = Icons.trending_up;
+                  break;
+                case 'flag':
+                  icon = Icons.flag;
+                  break;
+                case 'lightbulb':
+                  icon = Icons.lightbulb_outline;
+                  break;
+                case 'bar_chart':
+                  icon = Icons.bar_chart;
+                  break;
+                default:
+                  icon = Icons.help_outline;
+              }
+
               return InkWell(
                 onTap: () => _sendMessage(q['question']!),
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF22C55E).withOpacity(0.2),
+                      color: const Color(0xFFE2E8F0),
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        q['icon']!,
-                        style: const TextStyle(fontSize: 16),
+                      Icon(
+                        icon,
+                        color: const Color(0xFF64748B),
+                        size: 16,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -302,16 +326,13 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: const Color(0xFFF0FDF4),
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: const Icon(
-                Icons.smart_toy_outlined,
-                color: Colors.white,
+                Icons.lightbulb_outline,
+                color: Color(0xFF64748B),
                 size: 20,
               ),
             ),
@@ -352,8 +373,9 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: const Icon(
                 Icons.person_outline,
@@ -376,16 +398,13 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFFF0FDF4),
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: const Icon(
-              Icons.smart_toy_outlined,
-              color: Colors.white,
+              Icons.lightbulb_outline,
+              color: Color(0xFF64748B),
               size: 20,
             ),
           ),
@@ -406,11 +425,11 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildDot(0),
+                _buildAnimatedDot(0),
                 const SizedBox(width: 4),
-                _buildDot(1),
+                _buildAnimatedDot(1),
                 const SizedBox(width: 4),
-                _buildDot(2),
+                _buildAnimatedDot(2),
               ],
             ),
           ),
@@ -419,25 +438,40 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
     );
   }
 
-  Widget _buildDot(int index) {
+  Widget _buildAnimatedDot(int index) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 1400),
+      curve: Curves.easeInOut,
       builder: (context, value, child) {
-        return Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: Color.lerp(
-              const Color(0xFFE2E8F0),
-              const Color(0xFF22C55E),
-              (value + index * 0.3) % 1.0,
+        // Create a wave effect by offsetting each dot's animation
+        final delay = index * 0.2;
+        final animationValue = ((value + delay) % 1.0);
+
+        // Create bounce effect using sine wave
+        final scale = 0.5 + (0.5 * (1 + math.sin(animationValue * 2 * math.pi)) / 2);
+        final opacity = 0.3 + (0.7 * (1 + math.sin(animationValue * 2 * math.pi)) / 2);
+
+        return Transform.scale(
+          scale: scale,
+          child: Opacity(
+            opacity: opacity,
+            child: Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Color(0xFF22C55E),
+                shape: BoxShape.circle,
+              ),
             ),
-            shape: BoxShape.circle,
           ),
         );
       },
-      onEnd: () => setState(() {}),
+      onEnd: () {
+        if (mounted && _isTyping) {
+          setState(() {});
+        }
+      },
     );
   }
 
@@ -470,7 +504,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                 child: TextField(
                   controller: _messageController,
                   decoration: const InputDecoration(
-                    hintText: 'Type your message...',
+                    hintText: 'ඔබේ පණිවිඩය ටයිප් කරන්න...',
                     hintStyle: TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 14,
@@ -495,11 +529,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: const Color(0xFF22C55E),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -510,7 +540,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
                   ],
                 ),
                 child: const Icon(
-                  Icons.send_rounded,
+                  Icons.send,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -546,13 +576,13 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             const SizedBox(height: 20),
             ListTile(
               leading: const Icon(Icons.refresh, color: Color(0xFF64748B)),
-              title: const Text('Clear Conversation'),
+              title: const Text('සංවාදය මකන්න'),
               onTap: () {
                 Navigator.pop(context);
                 setState(() {
                   _messages.clear();
                   _messages.add({
-                    'text': 'Hello! I\'m your AI assistant for ${widget.childData['name']}. How can I help you today?',
+                    'text': 'ආයුබෝවන්! මම ${widget.childData['name']}ට සහාය වන AI සහායකයා. අද මම ඔබට කෙසේ උදව් කළ හැකිද?',
                     'isUser': false,
                     'timestamp': DateTime.now(),
                   });
@@ -561,7 +591,7 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
             ),
             ListTile(
               leading: const Icon(Icons.info_outline, color: Color(0xFF64748B)),
-              title: const Text('About AI Assistant'),
+              title: const Text('AI සහායක ගැන'),
               onTap: () {
                 Navigator.pop(context);
                 _showAboutDialog(context);
@@ -578,15 +608,15 @@ class _AIAssistantPageState extends State<AIAssistantPage> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('About AI Assistant'),
+        title: const Text('AI සහායක ගැන'),
         content: const Text(
-          'This AI assistant helps you understand your child\'s speech therapy progress, suggests activities, and answers questions about their development.\n\nThis assistant uses AI to provide personalized responses based on speech therapy knowledge.',
+          'මෙම AI සහායකයා ඔබේ දරුවාගේ කථන චිකිත්සක ප්‍රගතිය තේරුම් ගැනීමට, ක්‍රියාකාරකම් යෝජනා කිරීමට සහ ඔවුන්ගේ සංවර්ධනය පිළිබඳ ප්‍රශ්නවලට පිළිතුරු දීමට උපකාරී වේ.\n\nමෙම සහායකයා කථන චිකිත්සක දැනුම මත පදනම්ව පුද්ගලික ප්‍රතිචාර සැපයීමට AI භාවිතා කරයි.',
           style: TextStyle(height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
+            child: const Text('තේරුණා'),
           ),
         ],
       ),

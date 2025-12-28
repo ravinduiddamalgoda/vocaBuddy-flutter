@@ -13,15 +13,15 @@ class ParentDashboardMain extends StatefulWidget {
 class _ParentDashboardMainState extends State<ParentDashboardMain> {
   // DUMMY DATA - Single child (replace with real data later)
   final Map<String, dynamic> _childData = {
-    'name': 'Emma Johnson',
+    'name': 'එමා ජොන්සන්',
     'age': 7,
     'accuracy': 78,
     'sessions': 8,
     'totalSessions': 10,
     'trend': 'up',
     'weeklyImprovement': '+12%',
-    'strongestArea': 'Vowel Sounds',
-    'focusArea': 'R Sounds',
+    'strongestArea': 'ස්වර ශබ්ද',
+    'focusArea': 'ර ශබ්ද',
   };
 
   @override
@@ -53,27 +53,6 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
             padding: EdgeInsets.zero,
           ),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 20, top: 10, bottom: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.account_circle_outlined, color: Color(0xFF64748B), size: 24),
-              onPressed: () {},
-              padding: EdgeInsets.zero,
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -83,7 +62,7 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
             children: [
               // Title
               const Text(
-                'Parent Dashboard',
+                'දෙමාපිය පිටුව',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
@@ -93,7 +72,7 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Monitoring ${child['name']}\'s progress',
+                '${child['name']}ගේ ප්‍රගතිය බලමින්',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF94A3B8),
@@ -101,104 +80,112 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
               ),
               const SizedBox(height: 32),
 
-              // Child Info Card with Light Grey Theme
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              // Child Info Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orange[300]!, width: 2),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 32,
-                            backgroundColor: Colors.orange[100],
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF4E6),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFFF9800), width: 2),
+                          ),
+                          child: Center(
                             child: Text(
                               child['name'][0].toUpperCase(),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 28,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.orange[800],
+                                color: Color(0xFF64748B),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  child['name'],
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blueGrey[800],
-                                  ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                child['name'],
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF334155),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Age: ${child['age']} years',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'වයස: වසර ${child['age']}',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF94A3B8),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.orange[600],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.trending_up, color: Colors.white, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  child['weeklyImprovement'],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF9800),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Divider(color: Colors.grey[300], height: 1),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatItem('Accuracy', '${child['accuracy']}%', Icons.star, Colors.orange),
-                          Container(width: 1, height: 40, color: Colors.grey[300]),
-                          _buildStatItem('Sessions', '${child['sessions']}/${child['totalSessions']}', Icons.calendar_today, Colors.blue),
-                          Container(width: 1, height: 40, color: Colors.grey[300]),
-                          _buildStatItem('Completion', '${completionRate.toInt()}%', Icons.check_circle, Colors.green),
-                        ],
-                      ),
-                    ],
-                  ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.trending_up, color: Colors.white, size: 16),
+                              const SizedBox(width: 4),
+                              Text(
+                                child['weeklyImprovement'],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Divider(color: const Color(0xFFE2E8F0), height: 1),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildStatItem('නිවැරදි බව', '${child['accuracy']}%', Icons.star, const Color(0xFF64748B)),
+                        Container(width: 1, height: 40, color: const Color(0xFFE2E8F0)),
+                        _buildStatItem('පාඩම්', '${child['sessions']}/${child['totalSessions']}', Icons.calendar_today, const Color(0xFF64748B)),
+                        Container(width: 1, height: 40, color: const Color(0xFFE2E8F0)),
+                        _buildStatItem('සම්පූර්ණ වීම', '${completionRate.toInt()}%', Icons.check_circle, const Color(0xFF64748B)),
+                      ],
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
               // Quick Actions Section
               const Text(
-                'Quick Actions',
+                'ඉක්මන් විකල්ප',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -217,12 +204,12 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
@@ -234,16 +221,16 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                   child: Row(
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFF4E6),
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
-                          Icons.analytics_outlined,
-                          color: Color(0xFFFF9800),
-                          size: 28,
+                          Icons.auto_stories_outlined,
+                          color: Color(0xFF64748B),
+                          size: 26,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -252,16 +239,16 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'View Detailed Analytics',
+                              'සවිස්තර විශ්ලේෂණ බලන්න',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF64748B),
                               ),
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'See charts, trends, and insights',
+                              'ප්‍රස්ථාර සහ ප්‍රගති විස්තර',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF94A3B8),
@@ -271,9 +258,9 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                         ),
                       ),
                       const Icon(
-                        Icons.arrow_forward_ios,
+                        Icons.keyboard_arrow_down_rounded,
                         color: Color(0xFFFF9800),
-                        size: 20,
+                        size: 28,
                       ),
                     ],
                   ),
@@ -291,12 +278,12 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                     ),
                   );
                 },
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(24),
                 child: Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.04),
@@ -308,16 +295,16 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                   child: Row(
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 52,
+                        height: 52,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0FDF4),
-                          borderRadius: BorderRadius.circular(16),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
                         ),
                         child: const Icon(
-                          Icons.chat_bubble_outline,
-                          color: Color(0xFF22C55E),
-                          size: 28,
+                          Icons.lightbulb_outline,
+                          color: Color(0xFF64748B),
+                          size: 26,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -326,16 +313,16 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AI Assistant',
+                              'AI සහායක',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF64748B),
                               ),
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Ask questions about progress',
+                              'ප්‍රගතිය ගැන ප්‍රශ්න අසන්න',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Color(0xFF94A3B8),
@@ -345,9 +332,9 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                         ),
                       ),
                       const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Color(0xFF22C55E),
-                        size: 20,
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFFFF9800),
+                        size: 28,
                       ),
                     ],
                   ),
@@ -357,7 +344,7 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
 
               // Performance Highlights
               const Text(
-                'Performance Highlights',
+                'කාර්ය සාධන ලකුණු',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -370,9 +357,9 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                 children: [
                   Expanded(
                     child: _buildHighlightCard(
-                      'Strongest Area',
+                      'හොඳම ක්ෂේත්‍රය',
                       child['strongestArea'],
-                      Icons.emoji_events_outlined,
+                      Icons.check_circle,
                       const Color(0xFF22C55E),
                       const Color(0xFFF0FDF4),
                     ),
@@ -380,9 +367,9 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildHighlightCard(
-                      'Focus Area',
+                      'අවධානය දිය යුතු ක්ෂේත්‍රය',
                       child['focusArea'],
-                      Icons.flag_outlined,
+                      Icons.circle_outlined,
                       const Color(0xFFFF9800),
                       const Color(0xFFFFF4E6),
                     ),
@@ -404,18 +391,18 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.blueGrey[800],
+            color: Color(0xFF334155),
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 11,
-            color: Colors.grey[600],
+            color: Color(0xFF94A3B8),
           ),
           textAlign: TextAlign.center,
         ),
@@ -449,10 +436,11 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: bgColor,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Icon(icon, color: iconColor, size: 20),
+            child: Icon(icon, color: const Color(0xFF64748B), size: 20),
           ),
           const SizedBox(height: 12),
           Text(

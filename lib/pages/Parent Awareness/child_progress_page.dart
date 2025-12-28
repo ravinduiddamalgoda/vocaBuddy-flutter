@@ -11,21 +11,47 @@ class ChildProgressPage extends StatefulWidget {
   State<ChildProgressPage> createState() => _ChildProgressPageState();
 }
 
-class _ChildProgressPageState extends State<ChildProgressPage> with SingleTickerProviderStateMixin {
+class _ChildProgressPageState extends State<ChildProgressPage>
+    with TickerProviderStateMixin {
   AnimationController? _animationController;
   Animation<double>? _animation;
+  AnimationController? _donutAnimationController;
+  Animation<double>? _donutAnimation;
+  bool _hasAnimated = false;
+  final GlobalKey _barChartKey = GlobalKey();
 
   // Sample data for charts
   final List<Map<String, dynamic>> progressData = [
-    {'week': 'Week 1', 'accuracy': 60},
-    {'week': 'Week 2', 'accuracy': 65},
-    {'week': 'Week 3', 'accuracy': 72},
-    {'week': 'Week 4', 'accuracy': 78},
+    {'week': 'සතිය 1', 'accuracy': 60},
+    {'week': 'සතිය 2', 'accuracy': 65},
+    {'week': 'සතිය 3', 'accuracy': 72},
+    {'week': 'සතිය 4', 'accuracy': 78},
+  ];
+
+  final List<Map<String, dynamic>> categoryData = [
+    {'category': 'S ශබ්ද', 'score': 85, 'color': Color(0xFF22C55E), 'level': 'විශිෂ්ටයි'},
+    {'category': 'R ශබ්ද', 'score': 75, 'color': Color(0xFF3B82F6), 'level': 'හොඳයි'},
+    {'category': 'T ශබ්ද', 'score': 60, 'color': Color(0xFFFF9800), 'level': 'සාමාන්‍යයි'},
+    {'category': 'K ශබ්ද', 'score': 45, 'color': Color(0xFFEF4444), 'level': 'පුහුණුවීම අවශ්‍යයි'},
+    {'category': 'N ශබ්ද', 'score': 78, 'color': Color(0xFF3B82F6), 'level': 'හොඳයි'},
   ];
 
   @override
   void initState() {
     super.initState();
+
+    // Animation for donut chart - starts immediately
+    _donutAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _donutAnimation = CurvedAnimation(
+      parent: _donutAnimationController!,
+      curve: Curves.easeInOutCubic,
+    );
+    _donutAnimationController!.forward();
+
+    // Animation for bar chart - triggered on scroll
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
@@ -34,22 +60,48 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
       parent: _animationController!,
       curve: Curves.easeInOutCubic,
     );
-    _animationController!.forward();
+
+    // Check visibility after a short delay to ensure layout is complete
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _checkBarChartVisibility();
+      }
+    });
   }
 
   @override
   void dispose() {
     _animationController?.dispose();
+    _donutAnimationController?.dispose();
     super.dispose();
   }
 
-  final List<Map<String, dynamic>> categoryData = [
-    {'category': 'S Sounds', 'score': 85, 'color': Color(0xFF22C55E), 'level': 'Excellent'},
-    {'category': 'R Sounds', 'score': 75, 'color': Color(0xFF3B82F6), 'level': 'Good'},
-    {'category': 'T Sounds', 'score': 60, 'color': Color(0xFFFF9800), 'level': 'Fair'},
-    {'category': 'K Sounds', 'score': 45, 'color': Color(0xFFEF4444), 'level': 'Needs Practice'},
-    {'category': 'N Sounds', 'score': 78, 'color': Color(0xFF3B82F6), 'level': 'Good'},
-  ];
+  void _checkBarChartVisibility() {
+    if (_hasAnimated || !mounted) return;
+
+    try {
+      final RenderBox? renderBox = _barChartKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.hasSize) return;
+
+      final position = renderBox.localToGlobal(Offset.zero);
+      final screenHeight = MediaQuery.of(context).size.height;
+      final chartHeight = renderBox.size.height;
+
+      // Check if at least 30% of the chart is visible
+      final visibleTop = math.max(0.0, position.dy);
+      final visibleBottom = math.min(screenHeight, position.dy + chartHeight);
+      final visibleHeight = visibleBottom - visibleTop;
+
+      if (visibleHeight > chartHeight * 0.3) {
+        setState(() {
+          _hasAnimated = true;
+        });
+        _animationController!.forward();
+      }
+    } catch (e) {
+      // Ignore errors during layout
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,179 +133,186 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
           ),
         ),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header with child info
-              Row(
-                children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (scrollNotification) {
+          if (scrollNotification is ScrollUpdateNotification) {
+            _checkBarChartVisibility();
+          }
+          return false;
+        },
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with child info
+                Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4E6),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFF9800), width: 2),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Center(
-                      child: Text(
-                        child['name'][0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          child['name'],
+                      child: Center(
+                        child: Text(
+                          child['name'][0].toUpperCase(),
                           style: const TextStyle(
                             fontSize: 28,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.bold,
                             color: Color(0xFF64748B),
-                            letterSpacing: -0.5,
                           ),
                         ),
-                        Text(
-                          'Age ${child['age']} • Progress Analytics',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            child['name'],
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                              letterSpacing: -0.5,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // Session Stats Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildDonutStatCard(
-                      'Session Completion',
-                      completionRate,
-                      '${child['sessions']}/${child['totalSessions']} completed',
-                      Icons.check_circle_outline,
-                      const Color(0xFF22C55E),
-                      const Color(0xFFF0FDF4),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Average Score',
-                      '${child['accuracy']}%',
-                      'Overall accuracy',
-                      Icons.star_outline,
-                      const Color(0xFFFF9800),
-                      const Color(0xFFFFF4E6),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Progress Over Time Chart
-              _buildChartCard(
-                title: 'Progress Over Time',
-                subtitle: 'Pronunciation accuracy improvement',
-                icon: Icons.show_chart,
-                child: _buildLineChart(),
-              ),
-              const SizedBox(height: 16),
-
-              // Word Category Performance
-              _buildChartCard(
-                title: 'Word Category Performance',
-                subtitle: 'Performance by phoneme groups',
-                icon: Icons.bar_chart,
-                child: _buildBarChart(),
-              ),
-              const SizedBox(height: 16),
-
-              // Session Stats Row (moved below)
-              const SizedBox(height: 16),
-
-              // Insights Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
+                          Text(
+                            'වයස ${child['age']} • ප්‍රගති විශ්ලේෂණ',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 32),
+
+                // Session Stats Row
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF4E6),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.lightbulb_outline,
-                            color: Color(0xFFFF9800),
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'Key Insights',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF64748B),
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _buildDonutStatCard(
+                        'පාඩම් සම්පූර්ණ කිරීම',
+                        completionRate,
+                        '${child['sessions']}/${child['totalSessions']} සම්පූර්ණයි',
+                        Icons.check_circle_outline,
+                        const Color(0xFF64748B),
+                        Colors.white,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    _buildInsightItem(
-                      '📈',
-                      'Great Progress!',
-                      'Pronunciation accuracy improved by 18% in 4 weeks.',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInsightItem(
-                      '🎯',
-                      'Strong Area',
-                      'S sounds show excellent performance at 85%.',
-                    ),
-                    const SizedBox(height: 12),
-                    _buildInsightItem(
-                      '💪',
-                      'Focus Area',
-                      'K sounds need more practice. Consider additional exercises.',
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildStatCard(
+                        'සාමාන්‍ය ලකුණු',
+                        '${child['accuracy']}%',
+                        'සමස්ත නිවැරදි බව',
+                        Icons.star_outline,
+                        const Color(0xFF64748B),
+                        Colors.white,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 16),
+
+                // Progress Over Time Chart
+                _buildChartCard(
+                  title: 'කාලයත් සමග ප්‍රගතිය',
+                  subtitle: 'උච්චාරණ නිවැරදි බව වැඩි දියුණුව',
+                  icon: Icons.show_chart,
+                  child: _buildLineChart(),
+                ),
+                const SizedBox(height: 16),
+
+                // Word Category Performance
+                Container(
+                  key: _barChartKey,
+                  child: _buildChartCard(
+                    title: 'වචන කාණ්ඩ ප්‍රගතිය',
+                    subtitle: 'ශබ්ද කණ්ඩායම් අනුව කාර්ය සාධනය',
+                    icon: Icons.bar_chart,
+                    child: _buildBarChart(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Insights Card
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF4E6),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                            ),
+                            child: const Icon(
+                              Icons.lightbulb_outline,
+                              color: Color(0xFF64748B),
+                              size: 26,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'ප්‍රධාන කරුණු',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInsightItem(
+                        Icons.trending_up,
+                        'විශිෂ්ට ප්‍රගතියක්!',
+                        'සති 4 කින් නිවැරදි බව 18% කින් වැඩි වී ඇත.',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInsightItem(
+                        Icons.check_circle,
+                        'හොඳම ක්ෂේත්‍රය',
+                        'S ශබ්ද 85% ක විශිෂ්ට ප්‍රගතියක් පෙන්වයි.',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildInsightItem(
+                        Icons.flag,
+                        'අවධානය යොමු කරන්න',
+                        'K ශබ්දවලට වැඩි පුහුණුවීමක් අවශ්‍යයි.',
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         ),
       ),
@@ -269,8 +328,8 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFFFF4E6),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -285,15 +344,17 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E6),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFFFF9800),
-                  size: 24,
+                  color: const Color(0xFF64748B),
+                  size: 26,
                 ),
               ),
               const SizedBox(width: 12),
@@ -340,13 +401,15 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
   }
 
   Widget _buildBarChart() {
-    final maxScore = categoryData.map((d) => d['score'] as int).reduce(math.max);
+    final maxScore = 100; // Use 100 as max for percentage-based display
 
     return Column(
       children: [
-        ...categoryData.map((data) {
+        ...categoryData.asMap().entries.map((entry) {
+          final index = entry.key;
+          final data = entry.value;
           final score = data['score'] as int;
-          final width = (score / maxScore) * 100;
+          final width = score.toDouble(); // Direct percentage
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
@@ -364,7 +427,26 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                         color: Color(0xFF64748B),
                       ),
                     ),
-                    Text(
+                    _animation != null
+                        ? AnimatedBuilder(
+                      animation: _animation!,
+                      builder: (context, child) {
+                        final delay = index * 0.15;
+                        final adjustedProgress = math.max(
+                          0.0,
+                          math.min(1.0, (_animation!.value - delay) / (1.0 - delay)),
+                        );
+                        return Text(
+                          '${(score * adjustedProgress).toInt()}%',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: data['color'],
+                          ),
+                        );
+                      },
+                    )
+                        : Text(
                       '$score%',
                       style: TextStyle(
                         fontSize: 13,
@@ -378,19 +460,68 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                 Stack(
                   children: [
                     Container(
-                      height: 8,
+                      height: 10,
                       decoration: BoxDecoration(
                         color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                     ),
-                    FractionallySizedBox(
+                    _animation != null
+                        ? AnimatedBuilder(
+                      animation: _animation!,
+                      builder: (context, child) {
+                        final delay = index * 0.15;
+                        final adjustedProgress = math.max(
+                          0.0,
+                          math.min(1.0, (_animation!.value - delay) / (1.0 - delay)),
+                        );
+                        return FractionallySizedBox(
+                          widthFactor: (width / 100) * adjustedProgress,
+                          child: Container(
+                            height: 10,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  data['color'].withOpacity(0.7),
+                                  data['color'],
+                                ],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: data['color'].withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                        : FractionallySizedBox(
                       widthFactor: width / 100,
                       child: Container(
-                        height: 8,
+                        height: 10,
                         decoration: BoxDecoration(
-                          color: data['color'],
-                          borderRadius: BorderRadius.circular(4),
+                          gradient: LinearGradient(
+                            colors: [
+                              data['color'].withOpacity(0.7),
+                              data['color'],
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: data['color'].withOpacity(0.3),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -401,18 +532,18 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
           );
         }).toList(),
         const SizedBox(height: 20),
-        // Performance level legend
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Performance Levels',
+                'කාර්ය සාධන මට්ටම්',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -424,10 +555,10 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                 spacing: 16,
                 runSpacing: 8,
                 children: [
-                  _buildLegendItem('Excellent', const Color(0xFF22C55E), '80-100%'),
-                  _buildLegendItem('Good', const Color(0xFF3B82F6), '70-79%'),
-                  _buildLegendItem('Fair', const Color(0xFFFF9800), '50-69%'),
-                  _buildLegendItem('Needs Practice', const Color(0xFFEF4444), '0-49%'),
+                  _buildLegendItem('විශිෂ්ටයි', const Color(0xFF22C55E), '80-100%'),
+                  _buildLegendItem('හොඳයි', const Color(0xFF3B82F6), '70-79%'),
+                  _buildLegendItem('සාමාන්‍යයි', const Color(0xFFFF9800), '50-69%'),
+                  _buildLegendItem('පුහුණුවීම අවශ්‍යයි', const Color(0xFFEF4444), '0-49%'),
                 ],
               ),
             ],
@@ -492,6 +623,7 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                 decoration: BoxDecoration(
                   color: bgColor,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
@@ -509,25 +641,25 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
           ),
           const SizedBox(height: 16),
           Center(
-            child: _animation != null
+            child: _donutAnimation != null
                 ? AnimatedBuilder(
-              animation: _animation!,
+              animation: _donutAnimation!,
               builder: (context, child) {
                 return SizedBox(
                   width: 120,
                   height: 120,
                   child: CustomPaint(
                     painter: _DonutChartPainter(
-                      percentage: percentage * _animation!.value,
+                      percentage: percentage * _donutAnimation!.value,
                       color: iconColor,
-                      backgroundColor: bgColor,
+                      backgroundColor: const Color(0xFFF8FAFC),
                     ),
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            '${(percentage * _animation!.value).toInt()}%',
+                            '${(percentage * _donutAnimation!.value).toInt()}%',
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
@@ -536,7 +668,7 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Complete',
+                            'සම්පූර්ණයි',
                             style: TextStyle(
                               fontSize: 11,
                               color: iconColor,
@@ -605,6 +737,7 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                 decoration: BoxDecoration(
                   color: bgColor,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Icon(icon, color: iconColor, size: 20),
               ),
@@ -636,7 +769,7 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Average',
+                  'සාමාන්‍ය',
                   style: TextStyle(
                     fontSize: 11,
                     color: iconColor,
@@ -663,13 +796,23 @@ class _ChildProgressPageState extends State<ChildProgressPage> with SingleTicker
     );
   }
 
-  Widget _buildInsightItem(String emoji, String title, String description) {
+  Widget _buildInsightItem(IconData icon, String title, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          emoji,
-          style: const TextStyle(fontSize: 24),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Icon(
+            icon,
+            color: const Color(0xFF64748B),
+            size: 20,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -714,7 +857,6 @@ class _LineChartPainter extends CustomPainter {
     final minAccuracy = data.map((d) => d['accuracy'] as int).reduce(math.min);
     final range = maxAccuracy - minAccuracy;
 
-    // Add padding to the chart
     final chartHeight = size.height - 50;
     final chartWidth = size.width - 40;
     final leftPadding = 20.0;
@@ -732,7 +874,6 @@ class _LineChartPainter extends CustomPainter {
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    // Draw horizontal grid lines
     for (int i = 0; i <= 4; i++) {
       final y = topPadding + (chartHeight / 4) * i;
       canvas.drawLine(
@@ -742,7 +883,6 @@ class _LineChartPainter extends CustomPainter {
       );
     }
 
-    // Draw line path
     final linePath = Path();
     final stepX = chartWidth / (data.length - 1);
 
@@ -762,7 +902,6 @@ class _LineChartPainter extends CustomPainter {
 
     canvas.drawPath(linePath, linePaint);
 
-    // Draw points and labels
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
       textAlign: TextAlign.center,
@@ -775,7 +914,6 @@ class _LineChartPainter extends CustomPainter {
           : 0.5;
       final y = topPadding + chartHeight - (normalizedValue * chartHeight);
 
-      // Draw outer white circle
       canvas.drawCircle(
         Offset(x, y),
         6,
@@ -784,7 +922,6 @@ class _LineChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Draw inner orange circle
       canvas.drawCircle(
         Offset(x, y),
         4,
@@ -793,7 +930,6 @@ class _LineChartPainter extends CustomPainter {
           ..style = PaintingStyle.fill,
       );
 
-      // Draw value label above point
       textPainter.text = TextSpan(
         text: '${data[i]['accuracy']}%',
         style: const TextStyle(
@@ -808,9 +944,8 @@ class _LineChartPainter extends CustomPainter {
         Offset(x - textPainter.width / 2, y - 22),
       );
 
-      // Draw week label below chart
       textPainter.text = TextSpan(
-        text: data[i]['week'].toString().replaceAll('Week ', 'W'),
+        text: data[i]['week'].toString().replaceAll('සතිය ', 'ස'),
         style: const TextStyle(
           fontSize: 11,
           color: Color(0xFF94A3B8),
@@ -845,7 +980,6 @@ class _DonutChartPainter extends CustomPainter {
     final radius = math.min(size.width, size.height) / 2;
     final strokeWidth = 12.0;
 
-    // Draw background circle
     final backgroundPaint = Paint()
       ..color = backgroundColor
       ..style = PaintingStyle.stroke
@@ -854,7 +988,6 @@ class _DonutChartPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius - strokeWidth / 2, backgroundPaint);
 
-    // Draw progress arc
     final progressPaint = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
@@ -864,7 +997,7 @@ class _DonutChartPainter extends CustomPainter {
     final sweepAngle = (percentage / 100) * 2 * math.pi;
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
-      -math.pi / 2, // Start from top
+      -math.pi / 2,
       sweepAngle,
       false,
       progressPaint,
