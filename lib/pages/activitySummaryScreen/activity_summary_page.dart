@@ -3,24 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:vocabuddy/pages/ActivityStart/activity_start_screen.dart';
 
 // ===================================================================
-// 1. CONSTANTS, THEMES, AND DATA MODELS
-//    (STRICTLY using the new monochromatic orange/gray colors)
+// COLORS
 // ===================================================================
+const Color _kAccentColor = Color(0xFFFF9500);
+const Color _kAccentSoft = Color(0xFFFFE8CC);
+const Color _kTextDark = Color(0xFF2D3748);
+const Color _kTextMuted = Color(0xFF718096);
+const Color _kBg = Color(0xFFFFFBF5);
+const Color _kCard = Colors.white;
 
-// --- Colors & Themes ---
-// New Color Palette: 0xFFFF9500, 0xFFFFAD33, 0xFF718096, 0xFFFFE8CC
-const Color _kPrimaryTheme = Color(0xFF718096); // Slate Gray (Was Deep Purple)
-const Color _kAccentColor = Color(0xFFFF9500); // Main Action Orange
-const Color _kSecondaryHighlight = Color(0xFFFFAD33); // Secondary Orange (Was Green)
-const Color _kBackgroundColor = Colors.white; // Requested: White Background
-const Color _kCardColor = Colors.white; // Requested: White Card Base
-const Color _kShadowColor = Color(0xFF718096); // Using Slate Gray for shadows (Was Light Gray)
-const Color _kTextColorDark = Color(0xFF718096); // Slate Gray for Main Text (Was Dark Navy)
-const Color _kTextColorMuted = Color(0xFF718096); // Slate Gray for Muted Text (Was Muted Gray)
-
-// --- Data Models ---
-
-/// Model for an activity item in the 'Today's Plan' section.
+// ===================================================================
+// DATA MODELS
+// ===================================================================
 class _SessionActivity {
   final String title;
   final String description;
@@ -28,29 +22,24 @@ class _SessionActivity {
   _SessionActivity(this.title, this.description, {this.isPrimary = false});
 }
 
-/// Model to hold core dashboard statistics.
 class _ActivityData {
   final String childName;
   final int totalSessions;
-  final int avgAccuracy;
 
   _ActivityData({
     required this.childName,
     required this.totalSessions,
-    required this.avgAccuracy,
   });
 
   static _ActivityData dummy = _ActivityData(
     childName: 'චමල්',
     totalSessions: 24,
-    avgAccuracy: 81,
   );
 }
 
 // ===================================================================
-// 2. MAIN STATEFUL WIDGET
+// SCREEN
 // ===================================================================
-
 class ActivitySummaryScreen extends StatefulWidget {
   const ActivitySummaryScreen({Key? key}) : super(key: key);
 
@@ -86,312 +75,186 @@ class _ActivitySummaryScreenState extends State<ActivitySummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Apply Poppins globally for the whole screen
     final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
 
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: textTheme,
-        scaffoldBackgroundColor: _kBackgroundColor,
+        scaffoldBackgroundColor: _kBg,
         appBarTheme: const AppBarTheme(
-          backgroundColor: _kBackgroundColor,
+          backgroundColor: _kBg,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
         ),
       ),
       child: Scaffold(
-        backgroundColor: _kBackgroundColor,
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _TopBar(),
-                const SizedBox(height: 32),
-                _HeaderTitle(childName: _data.childName),
-                const SizedBox(height: 30),
-                _StatsOverview(data: _data),
-                const SizedBox(height: 30),
+        backgroundColor: _kBg,
 
-                // Previous Summary Card
-                _CollapsibleCard(
-                  isExpanded: _isPreviousExpanded,
-                  onToggle: () => setState(() => _isPreviousExpanded = !_isPreviousExpanded),
-                  themeColor: _kPrimaryTheme, // Slate Gray
-                  icon: Icons.history_edu_rounded,
-                  title: 'පසුගිය ක්‍රියාකාරකම් සාරාංශය',
-                  subtitle: 'පසුගිය සැසි වල ප්‍රගතිය හා වෘත්තීය සටහන් බලන්න.',
-                  child: const _PreviousSummaryContent(),
-                ),
-                const SizedBox(height: 18),
-
-                // Today's Plan Card
-                _CollapsibleCard(
-                  isExpanded: _isTodayExpanded,
-                  onToggle: () => setState(() => _isTodayExpanded = !_isTodayExpanded),
-                  themeColor: _kSecondaryHighlight, // Orange Highlight
-                  icon: Icons.lightbulb_outline_rounded,
-                  title: 'අද කළ යුතු නිර්දේශිත ක්‍රියාකාරකම්',
-                  subtitle: 'අද සෙෂන් සඳහා වෘත්තීය පුහුණු නිර්දේශ.',
-                  child: _TodayPlanContent(activities: _todayActivities),
-                ),
-                const SizedBox(height: 40),
-
-                _PrimaryButton(
-                  label: 'ආරම්භ කරන්න',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => AntLearningActivity()),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-              ],
+        // ✅ AppBar with Back button
+        appBar: AppBar(
+          elevation: 0.6,
+          shadowColor: Colors.black.withOpacity(0.06),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: _kTextDark),
+            onPressed: () => Navigator.pop(context),
+          ),
+          centerTitle: true,
+          title: Text(
+            "Activity Summary",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: _kTextDark,
             ),
           ),
         ),
+
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            final isSmall = w < 360;
+            final isTablet = w >= 600;
+
+            final horizontal = isTablet ? 32.0 : (isSmall ? 16.0 : 22.0);
+            final vertical = isTablet ? 22.0 : 18.0;
+            final scale = (w / 390).clamp(0.90, 1.18);
+
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _HeaderCard(
+                        childName: _data.childName,
+                        scale: scale,
+                      ),
+                      SizedBox(height: 18 * scale),
+
+                      // ✅ Only Total Sessions Card (accuracy removed)
+                      _SessionStatsCard(
+                        totalSessions: _data.totalSessions,
+                        scale: scale,
+                      ),
+
+                      SizedBox(height: 14 * scale),
+
+                      _CollapsibleCard(
+                        isExpanded: _isPreviousExpanded,
+                        onToggle: () => setState(() => _isPreviousExpanded = !_isPreviousExpanded),
+                        themeColor: _kTextMuted,
+                        icon: Icons.history_edu_rounded,
+                        title: 'පසුගිය ක්‍රියාකාරකම් සාරාංශය',
+                        subtitle: 'පසුගිය සැසි වල ප්‍රගතිය හා වෘත්තීය සටහන් බලන්න.',
+                        child: const _PreviousSummaryContent(),
+                        scale: scale,
+                      ),
+
+                      SizedBox(height: 12 * scale),
+
+                      _CollapsibleCard(
+                        isExpanded: _isTodayExpanded,
+                        onToggle: () => setState(() => _isTodayExpanded = !_isTodayExpanded),
+                        themeColor: _kAccentColor,
+                        icon: Icons.lightbulb_outline_rounded,
+                        title: 'අද කළ යුතු නිර්දේශිත ක්‍රියාකාරකම්',
+                        subtitle: 'අද සෙෂන් සඳහා වෘත්තීය පුහුණු නිර්දේශ.',
+                        child: _TodayPlanContent(activities: _todayActivities),
+                        scale: scale,
+                      ),
+
+                      SizedBox(height: 18 * scale),
+
+                      _PrimaryButton(
+                        label: 'ආරම්භ කරන්න',
+                        scale: scale,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => AntLearningActivity()),
+                          );
+                        },
+                      ),
+
+                      SizedBox(height: 10 * scale),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
 // ===================================================================
-// 3. WIDGET COMPONENTS
+// WIDGETS
 // ===================================================================
 
-/// Creates a decorative icon with a subtle neumorphic effect.
-class _StyledIcon extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color shadowColor;
-
-  const _StyledIcon({
-    required this.icon,
-    required this.color,
-    this.shadowColor = const Color(0xFF718096), // Use Slate Gray
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: _kCardColor,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: shadowColor.withOpacity(0.3), // Darker shadow based on Gray
-            offset: const Offset(4, 4),
-            blurRadius: 10,
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.5),
-            offset: const Offset(-4, -4),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: Icon(icon, size: 26, color: color),
-    );
-  }
-}
-
-/// The top row with profile and notifications.
-class _TopBar extends StatelessWidget {
-  const _TopBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        _StyledIcon(
-          icon: Icons.person_outline_rounded,
-          color: _kPrimaryTheme, // Slate Gray
-        ),
-        _StyledIcon(
-          icon: Icons.notifications_none_rounded,
-          color: _kTextColorMuted, // Slate Gray
-        ),
-      ],
-    );
-  }
-}
-
-/// The main greeting and description block.
-class _HeaderTitle extends StatelessWidget {
+class _HeaderCard extends StatelessWidget {
   final String childName;
-  const _HeaderTitle({required this.childName});
+  final double scale;
+
+  const _HeaderCard({required this.childName, required this.scale});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Child Activity Summary',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: _kTextColorDark, // Slate Gray
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '$childName ගේ කථන පුහුණු ප්‍රගතිය මෙහිදී නිරීක්ෂණය කළ හැක.',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: _kTextColorMuted.withOpacity(0.8), // Muted Slate Gray
-            height: 1.5,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-}
+    final iconSize = 26.0 * scale;
+    final boxSize = 54.0 * scale;
 
-/// A highly visual circular progress indicator for accuracy.
-class _RadialProgressIndicator extends StatelessWidget {
-  final int value; // 0-100
-  final double size;
-  final Color color;
-
-  const _RadialProgressIndicator({
-    required this.value,
-    this.size = 120,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      width: size,
-      height: size,
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(18 * scale),
       decoration: BoxDecoration(
-        color: _kCardColor,
-        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [_kAccentColor, Color(0xFFFFAD33)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20 * scale),
         boxShadow: [
           BoxShadow(
-            color: _kShadowColor.withOpacity(0.3), // Slate Gray Shadow
-            offset: const Offset(5, 5),
-            blurRadius: 15,
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.8),
-            offset: const Offset(-5, -5),
-            blurRadius: 15,
-          ),
-        ],
-      ),
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: size,
-            height: size,
-            child: TweenAnimationBuilder<double>(
-              tween: Tween<double>(begin: 0.0, end: value / 100),
-              duration: const Duration(milliseconds: 1000),
-              builder: (context, progress, child) {
-                return CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 8,
-                  backgroundColor: color.withOpacity(0.15),
-                  valueColor: AlwaysStoppedAnimation<Color>(color),
-                );
-              },
-            ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '$value%',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: color,
-                  fontSize: 24,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'සාමාන්‍ය',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: _kTextColorMuted, // Slate Gray
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// The card showing key stats (Radial + Counter).
-class _StatsOverview extends StatelessWidget {
-  final _ActivityData data;
-  const _StatsOverview({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: _kCardColor,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: _kShadowColor.withOpacity(0.3), // Slate Gray Shadow
-            offset: const Offset(0, 10),
-            blurRadius: 30,
+            color: _kAccentColor.withOpacity(0.20),
+            blurRadius: 20 * scale,
+            offset: Offset(0, 10 * scale),
           ),
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Radial Progress (Main Focus)
-          _RadialProgressIndicator(
-            value: data.avgAccuracy,
-            color: _kPrimaryTheme, // Slate Gray
-            size: 130,
+          Container(
+            width: boxSize,
+            height: boxSize,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.22),
+              borderRadius: BorderRadius.circular(16 * scale),
+            ),
+            child: Icon(Icons.bar_chart_rounded, color: Colors.white, size: iconSize),
           ),
-          const SizedBox(width: 20),
-
-          // Total Sessions Counter
+          SizedBox(width: 12 * scale),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'මුළු සැසි',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: _kTextColorMuted, // Slate Gray
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  "Child Activity Summary",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5 * scale,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 6 * scale),
                 Text(
-                  '${data.totalSessions}',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
-                    color: _kAccentColor, // Action Orange
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ප්‍රගතිය දිනෙන් දින ඉහළ යයි!',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: _kSecondaryHighlight, // Secondary Orange
-                    fontWeight: FontWeight.bold,
+                  "$childName ගේ කථන පුහුණු ප්‍රගතිය මෙහිදී නිරීක්ෂණය කළ හැක.",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.2 * scale,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.92),
+                    height: 1.45,
                   ),
                 ),
               ],
@@ -403,7 +266,74 @@ class _StatsOverview extends StatelessWidget {
   }
 }
 
-/// Reusable and animated Collapsible Card for sections.
+class _SessionStatsCard extends StatelessWidget {
+  final int totalSessions;
+  final double scale;
+
+  const _SessionStatsCard({
+    required this.totalSessions,
+    required this.scale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16 * scale),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(18 * scale),
+        border: Border.all(color: _kAccentSoft, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18 * scale,
+            offset: Offset(0, 10 * scale),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54 * scale,
+            height: 54 * scale,
+            decoration: BoxDecoration(
+              color: _kAccentSoft,
+              borderRadius: BorderRadius.circular(16 * scale),
+            ),
+            child: Icon(Icons.event_note_rounded,
+                color: _kAccentColor, size: 26 * scale),
+          ),
+          SizedBox(width: 14 * scale),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "මුළු සැසි",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5 * scale,
+                    fontWeight: FontWeight.w600,
+                    color: _kTextMuted,
+                  ),
+                ),
+                SizedBox(height: 6 * scale),
+                Text(
+                  "$totalSessions",
+                  style: GoogleFonts.poppins(
+                    fontSize: 30 * scale,
+                    fontWeight: FontWeight.w800,
+                    color: _kTextDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CollapsibleCard extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
@@ -412,6 +342,7 @@ class _CollapsibleCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Widget child;
+  final double scale;
 
   const _CollapsibleCard({
     required this.isExpanded,
@@ -421,154 +352,125 @@ class _CollapsibleCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.child,
+    required this.scale,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = Color(0xFFFFE8CC); // Lightest Orange/Cream
-    final shadowColor = _kPrimaryTheme.withOpacity(0.2);
-
     return Container(
       decoration: BoxDecoration(
-        color: _kCardColor,
-        borderRadius: BorderRadius.circular(26),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(18 * scale),
+        border: Border.all(color: _kAccentSoft, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: _kShadowColor.withOpacity(0.3), // Slate Gray Shadow
-            offset: const Offset(0, 5),
-            blurRadius: 15,
-          ),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18 * scale,
+            offset: Offset(0, 10 * scale),
+          )
         ],
       ),
       child: Column(
         children: [
-          // Header (Always visible)
           InkWell(
-            borderRadius: BorderRadius.circular(26),
+            borderRadius: BorderRadius.circular(18 * scale),
             onTap: onToggle,
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: isExpanded
-                    ? const BorderRadius.vertical(top: Radius.circular(26))
-                    : BorderRadius.circular(26),
-              ),
+            child: Padding(
+              padding: EdgeInsets.all(14 * scale),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 44 * scale,
+                    height: 44 * scale,
                     decoration: BoxDecoration(
-                      color: _kCardColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: themeColor.withOpacity(0.2),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      color: _kAccentSoft,
+                      borderRadius: BorderRadius.circular(14 * scale),
                     ),
-                    child: Icon(icon, size: 22, color: themeColor),
+                    child: Icon(icon, color: themeColor, size: 22 * scale),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 12 * scale),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w700,
-                            color: _kTextColorDark, // Slate Gray
-                            fontSize: 16,
+                            fontSize: 14.2 * scale,
+                            color: _kTextDark,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        SizedBox(height: 4 * scale),
                         Text(
                           subtitle,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: _kTextColorMuted.withOpacity(0.8), // Muted Slate Gray
-                            height: 1.4,
-                            fontSize: 11,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12 * scale,
+                            color: _kTextMuted,
+                            height: 1.35,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Animated arrow icon
                   AnimatedRotation(
                     turns: isExpanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 300),
+                    duration: const Duration(milliseconds: 250),
                     child: Icon(
                       Icons.keyboard_arrow_down_rounded,
                       color: themeColor,
-                      size: 28,
+                      size: 28 * scale,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          // Content (Animated expansion)
           AnimatedSize(
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            child: Container(
-              constraints: isExpanded
-                  ? null
-                  : const BoxConstraints(maxHeight: 0.0),
-              width: double.infinity,
-              padding: EdgeInsets.only(
-                  left: 20, right: 20, top: 18, bottom: isExpanded ? 24 : 0),
-              decoration: BoxDecoration(
-                color: _kCardColor,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(26),
-                ),
-              ),
-              child: isExpanded
-                  ? child
-                  : const SizedBox.shrink(),
-            ),
-          ),
+            child: isExpanded
+                ? Padding(
+              padding: EdgeInsets.fromLTRB(14 * scale, 0, 14 * scale, 14 * scale),
+              child: child,
+            )
+                : const SizedBox.shrink(),
+          )
         ],
       ),
     );
   }
 }
 
-/// Widget for a Key-Value pair row.
 class _KVRow extends StatelessWidget {
   final String label;
   final String value;
-  final Color valueColor;
 
-  const _KVRow(this.label, this.value, {required this.valueColor});
+  const _KVRow(this.label, this.value);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
           Expanded(
             child: Text(
               label,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: _kTextColorMuted.withOpacity(0.8), // Muted Slate Gray
-                fontSize: 12,
-              ),
+              style: GoogleFonts.poppins(fontSize: 12.5, color: _kTextMuted),
             ),
           ),
           Text(
             value,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontSize: 14,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: valueColor,
+              color: _kAccentColor,
             ),
           ),
         ],
@@ -577,7 +479,6 @@ class _KVRow extends StatelessWidget {
   }
 }
 
-/// Content for the Previous Summary Card.
 class _PreviousSummaryContent extends StatelessWidget {
   const _PreviousSummaryContent();
 
@@ -586,25 +487,26 @@ class _PreviousSummaryContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _KVRow('අවසාන සැසියේ වචන සංඛ්‍යාව', '28', valueColor: _kAccentColor),
-        _KVRow('නිවැරදි උච්චාරණ අනුපාතය', '82%', valueColor: _kAccentColor),
-        _KVRow('නැවත පුහුණු කළ යුතු වචන', '5', valueColor: _kAccentColor),
-        const SizedBox(height: 16),
+        const _KVRow('අවසාන සැසියේ වචන සංඛ්‍යාව', '28'),
+        const _KVRow('නිවැරදි උච්චාරණ අනුපාතය', '82%'),
+        const _KVRow('නැවත පුහුණු කළ යුතු වචන', '5'),
+        const SizedBox(height: 14),
         Text(
-          'වෘත්තීය සටහන (Therapist Note)',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontSize: 14,
+          "වෘත්තීය සටහන (Therapist Note)",
+          style: GoogleFonts.poppins(
+            fontSize: 13.5,
             fontWeight: FontWeight.w700,
-            color: _kTextColorDark, // Slate Gray
+            color: _kTextDark,
           ),
         ),
-        const Divider(height: 16, thickness: 1, color: _kShadowColor), // Slate Gray Divider
+        const SizedBox(height: 8),
+        Divider(color: Colors.black.withOpacity(0.06), height: 16),
         Text(
           '“ර”, “ස”, “ශ” සම්බන්ධ නාද සඳහා තවදුරටත් මෘදු මගපෙන්වීම් අවශ්‍යයි. '
               'සෙනෙහසින් යුත් පුහුණු පරිසරයක් තුළ පියවරෙන් පියවර ඉදිරියට යන්න.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: 12,
-            color: _kTextColorMuted.withOpacity(0.8), // Muted Slate Gray
+          style: GoogleFonts.poppins(
+            fontSize: 12.5,
+            color: _kTextMuted,
             height: 1.6,
           ),
         ),
@@ -613,20 +515,16 @@ class _PreviousSummaryContent extends StatelessWidget {
   }
 }
 
-/// Widget for a single To-Do Item.
 class _TodoItem extends StatelessWidget {
   final _SessionActivity activity;
-
   const _TodoItem({required this.activity});
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Define local variables within the build method scope
-    // Swapping Green (kSecondaryColor) for Secondary Orange (kSecondaryHighlight)
-    // Swapping Shadow Color for Slate Gray
-    final borderColor = activity.isPrimary ? _kSecondaryHighlight : _kShadowColor;
-    final iconColor = activity.isPrimary ? _kSecondaryHighlight : _kTextColorMuted.withOpacity(0.5);
-    final bg = activity.isPrimary ? const Color(0xFFFFE8CC).withOpacity(0.8) : Colors.transparent;
+    final bg = activity.isPrimary ? _kAccentSoft : Colors.transparent;
+    final border = activity.isPrimary ? _kAccentColor : _kAccentSoft;
+    final icon =
+    activity.isPrimary ? Icons.star_rounded : Icons.check_circle_outline_rounded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -634,18 +532,12 @@ class _TodoItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor, width: activity.isPrimary ? 1.5 : 1),
+        border: Border.all(color: border, width: 1.2),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            activity.isPrimary
-                ? Icons.star_rounded // Using star for primary importance
-                : Icons.radio_button_unchecked_rounded,
-            size: 20,
-            color: iconColor,
-          ),
+          Icon(icon, color: _kAccentColor, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -653,18 +545,18 @@ class _TodoItem extends StatelessWidget {
               children: [
                 Text(
                   activity.title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontSize: 13,
+                  style: GoogleFonts.poppins(
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w700,
-                    color: _kTextColorDark, // Slate Gray
+                    color: _kTextDark,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   activity.description,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
-                    color: _kTextColorMuted.withOpacity(0.8), // Muted Slate Gray
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: _kTextMuted,
                     height: 1.5,
                   ),
                 ),
@@ -677,7 +569,6 @@ class _TodoItem extends StatelessWidget {
   }
 }
 
-/// Content for the Today's Plan Card.
 class _TodayPlanContent extends StatelessWidget {
   final List<_SessionActivity> activities;
   const _TodayPlanContent({required this.activities});
@@ -685,59 +576,54 @@ class _TodayPlanContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      children: activities.map((activity) => _TodoItem(activity: activity)).toList(),
+      children: activities.map((a) => _TodoItem(activity: a)).toList(),
     );
   }
 }
 
-/// Primary Call-to-Action button with elevation.
 class _PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final double scale;
 
   const _PrimaryButton({
     required this.label,
     required this.onTap,
+    required this.scale,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Ink(
-        decoration: BoxDecoration(
-          color: _kAccentColor, // Action Orange
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: _kAccentColor.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: _kAccentColor,
+          padding: EdgeInsets.symmetric(vertical: 16 * scale),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16 * scale),
+          ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
+        onPressed: onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
                 label,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontSize: 16,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  fontSize: 15.3 * scale,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(width: 10),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ],
-          ),
+            ),
+            SizedBox(width: 10 * scale),
+            Icon(Icons.arrow_forward_rounded,
+                color: Colors.white, size: 20 * scale),
+          ],
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'pages/Parent Awareness/parent_dashboard_main.dart';
 import 'pages/inputVoices/input_new_voices.dart';
 import 'pages/therapyStartScreen/therapy_start_screen.dart';
 
+
 void main() {
   runApp(const VocaBuddyApp());
 }
@@ -24,8 +25,9 @@ class VocaBuddyApp extends StatelessWidget {
         '/': (context) => const DoctorHomeScreen(),
         '/assign-activities': (context) => const SelectChildrenPage(),
         '/view-reports': (context) =>  ParentDashboardMain(),
-        '/voice-therapy':(context) => VoiceRecordingApp(),
-        '/attempt-session': (context) => const SpeechBuddyApp(),
+       // '/voice-therapy':(context) => VoiceRecordingApp(),
+        '/attempt-session': (context) => const InstructionsScreen(),
+        '/upload-voice-recordings' : (context)=> UploadVoiceRecordingsScreen()
 
         // '/view-reports': (context) => const ViewReportsPage(),
         // later:
