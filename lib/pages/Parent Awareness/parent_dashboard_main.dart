@@ -62,7 +62,7 @@ class _ParentDashboardMainState extends State<ParentDashboardMain> {
             children: [
               // Title
               const Text(
-                'දෙමාපිය පිටුව',
+                'දෙමාපිය පුවරුව',
                 style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.w600,
