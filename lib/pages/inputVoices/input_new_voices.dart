@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 
-void main() {
-  runApp(const VoiceRecordingApp());
-}
-
 class VoiceRecordingApp extends StatelessWidget {
   const VoiceRecordingApp({Key? key}) : super(key: key);
 

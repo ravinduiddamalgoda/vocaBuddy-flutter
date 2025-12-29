@@ -374,6 +374,81 @@ class DoctorHomeScreen extends StatelessWidget {
                   ),
                 ),
 
+                const SizedBox(height: 18),
+
+                // ✅ NEW: Upload New Voice Recordings button
+                GestureDetector(
+                  onTap: () => _go(context, '/upload-voice-recordings'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E8),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text(
+                                "Upload New Voice Recordings",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF5A4332),
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                "Upload voice sessions and\nrecordings for review",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  height: 1.5,
+                                  color: Color(0xFF8A6E5A),
+                                ),
+                              ),
+                              SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Text(
+                                    "Upload Now",
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFFF6D00),
+                                    ),
+                                  ),
+                                  SizedBox(width: 6),
+                                  Icon(
+                                    Icons.arrow_forward,
+                                    size: 18,
+                                    color: Color(0xFFFF6D00),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          width: 74,
+                          height: 74,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFA726),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.mic,
+                            size: 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 24),
               ],
             ),
