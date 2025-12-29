@@ -1,23 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 
-class VoiceRecordingApp extends StatelessWidget {
-  const VoiceRecordingApp({Key? key}) : super(key: key);
+/// =======================
+/// MAIN SCREEN
+/// =======================
+class UploadVoiceRecordingsScreen extends StatefulWidget {
+  const UploadVoiceRecordingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Input new Word to The System',
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-        scaffoldBackgroundColor: const Color(0xFFFFF5E6),
-      ),
-      home: const HomePage(),
-    );
-  }
+  State<UploadVoiceRecordingsScreen> createState() =>
+      _UploadVoiceRecordingsScreenState();
 }
 
+/// =======================
+/// MODELS
+/// =======================
 class Recording {
   final String name;
   final String path;
@@ -33,9 +30,9 @@ class Recording {
 class Folder {
   final String id;
   final String name;
+  final DateTime createdAt;
   final List<Recording> correctRecordings;
   final List<Recording> incorrectRecordings;
-  final DateTime createdAt;
 
   Folder({
     required this.id,
@@ -45,17 +42,12 @@ class Folder {
         incorrectRecordings = [];
 }
 
-class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
-
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
-
-class _HomePageState extends State<HomePage> {
-  List<Folder> folders = [];
-
-  @override
+/// =======================
+/// HOME PAGE STATE
+/// =======================
+class _UploadVoiceRecordingsScreenState
+    extends State<UploadVoiceRecordingsScreen> {
+  final List<Folder> folders = [];
 
   void _createNewFolder() {
     showDialog(
@@ -66,40 +58,46 @@ class _HomePageState extends State<HomePage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text('නව ෆෝල්ඩරයක් සාදන්න'),
+          title: const Text(
+            'නව ෆෝල්ඩරයක් සාදන්න',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: TextField(
-            onChanged: (value) {
-              folderName = value;
-            },
+            onChanged: (value) => folderName = value,
             decoration: InputDecoration(
               hintText: 'ෆෝල්ඩර නම ඇතුළත් කරන්න',
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
               ),
               filled: true,
-              fillColor: Colors.orange.shade50,
+              fillColor: const Color(0xFFFFF3E8),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('අවලංගු කරන්න'),
+              child: const Text(
+                'අවලංගු කරන්න',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: const Color(0xFFFF6D00),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
               onPressed: () {
-                if (folderName.isNotEmpty) {
+                if (folderName.trim().isNotEmpty) {
                   setState(() {
-                    folders.add(Folder(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: folderName,
-                      createdAt: DateTime.now(),
-                    ));
+                    folders.add(
+                      Folder(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        name: folderName.trim(),
+                        createdAt: DateTime.now(),
+                      ),
+                    );
                   });
                   Navigator.pop(context);
                 }
@@ -112,38 +110,62 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _openFolder(Folder folder) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FolderDetailPage(
+          folder: folder,
+          onUpdate: () => setState(() {}),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFDFDFD),
+
+      /// ✅ APP BAR with BACK BUTTON
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFDFDFD),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF3B1F47)),
+          onPressed: () => Navigator.pop(context), // ✅ back to previous page
+        ),
+        centerTitle: true,
+        title: const Text(
+          "Upload Voice Recordings",
+          style: TextStyle(
+            color: Color(0xFF3B1F47),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+      ),
+
+      /// BODY
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            /// HEADER CARD (same theme style)
             Container(
               margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF9800), Color(0xFFFFB74D)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.orange.shade200,
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+                color: const Color(0xFFFFF3E8),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(15),
+                    width: 74,
+                    height: 74,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFA726),
+                      shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.mic,
@@ -151,7 +173,7 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(width: 20),
+                  const SizedBox(width: 18),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,213 +181,145 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           'අලුත් වචන එකතු කරන්න !',
                           style: TextStyle(
-                            fontSize: 24,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Color(0xFF5A4332),
                           ),
                         ),
-                        SizedBox(height: 5),
+                        SizedBox(height: 6),
                         Text(
                           'සිංහල Interactive Learning Platform',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white,
+                            fontSize: 12,
+                            color: Color(0xFF8A6E5A),
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
 
-            // Folders List
+            /// FOLDERS LIST
             Expanded(
-              child: ListView.builder(
+              child: folders.isEmpty
+                  ? Center(
+                child: Text(
+                  "No folders yet. Create your first folder!",
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                ),
+              )
+                  : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: folders.length,
                 itemBuilder: (context, index) {
                   final folder = folders[index];
-                  return _buildFolderCard(folder, index);
+                  return _buildFolderCard(folder);
                 },
               ),
             ),
           ],
         ),
       ),
+
+      /// FAB
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createNewFolder,
-        backgroundColor: Colors.orange,
-        icon: const Icon(Icons.add),
-        label: const Text('නව ෆෝල්ඩරය'),
+        backgroundColor: const Color(0xFFFF6D00),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          'නව ෆෝල්ඩරය',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
 
-  Widget _buildFolderCard(Folder folder, int index) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.orange.shade100, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.shade100,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Folder Header
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FolderDetailPage(
-                    folder: folder,
-                    onUpdate: () => setState(() {}),
-                  ),
-                ),
-              );
-            },
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-            child: Container(
-              padding: const EdgeInsets.all(20),
+  Widget _buildFolderCard(Folder folder) {
+    final total =
+        folder.correctRecordings.length + folder.incorrectRecordings.length;
+
+    return GestureDetector(
+      onTap: () => _openFolder(folder),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: const Color(0xFFFFF3E8), width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.orange.shade50,
-                    Colors.orange.shade100,
-                  ],
-                ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                color: const Color(0xFFFFF3E8),
+                borderRadius: BorderRadius.circular(14),
               ),
-              child: Row(
+              child: const Icon(
+                Icons.folder,
+                color: Color(0xFFFF6D00),
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.orange,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.folder,
-                      color: Colors.white,
-                      size: 28,
+                  Text(
+                    folder.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3B1F47),
                     ),
                   ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          folder.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${folder.correctRecordings.length + folder.incorrectRecordings.length} recordings',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    "$total recordings",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
                     ),
                   ),
-                  const Icon(Icons.chevron_right, color: Colors.orange),
                 ],
               ),
             ),
-          ),
-
-          // Stats
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'නිවැරදි',
-                    folder.correctRecordings.length.toString(),
-                    Icons.check_circle,
-                    Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    'වැරදි',
-                    folder.incorrectRecordings.length.toString(),
-                    Icons.cancel,
-                    Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String label, String count, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                count,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade700,
-                ),
-              ),
-            ],
-          ),
-        ],
+            const Icon(Icons.arrow_forward_ios,
+                size: 16, color: Color(0xFFFF6D00)),
+          ],
+        ),
       ),
     );
   }
 }
 
+/// =======================
+/// FOLDER DETAIL PAGE
+/// =======================
 class FolderDetailPage extends StatefulWidget {
   final Folder folder;
   final VoidCallback onUpdate;
 
   const FolderDetailPage({
-    Key? key,
+    super.key,
     required this.folder,
     required this.onUpdate,
-  }) : super(key: key);
+  });
 
   @override
   State<FolderDetailPage> createState() => _FolderDetailPageState();
@@ -396,6 +350,7 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
           }
         }
       });
+
       widget.onUpdate();
     }
   }
@@ -407,72 +362,72 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
         : widget.folder.incorrectRecordings;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF5E6),
+      backgroundColor: const Color(0xFFFDFDFD),
+
+      /// ✅ BACK BUTTON
       appBar: AppBar(
-        backgroundColor: Colors.orange,
+        backgroundColor: const Color(0xFFFDFDFD),
         elevation: 0,
-        title: Text(widget.folder.name),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF3B1F47)),
+          onPressed: () => Navigator.pop(context),
+        ),
         centerTitle: true,
+        title: Text(
+          widget.folder.name,
+          style: const TextStyle(
+            color: Color(0xFF3B1F47),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
+
       body: Column(
         children: [
-          // Tab Selector
+          const SizedBox(height: 12),
+
+          /// Tabs
           Container(
-            margin: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.orange.shade100,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: const Color(0xFFFFF3E8),
+              borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
               children: [
                 Expanded(
-                  child: _buildTabButton(
-                    'නිවැරදි පටිගත කිරීම්',
-                    'correct',
-                    Icons.check_circle,
-                    Colors.green,
+                  child: _tabButton(
+                    label: "නිවැරදි",
+                    value: "correct",
+                    color: const Color(0xFF34A853),
+                    icon: Icons.check_circle,
                   ),
                 ),
                 Expanded(
-                  child: _buildTabButton(
-                    'වැරදි පටිගත කිරීම්',
-                    'incorrect',
-                    Icons.cancel,
-                    Colors.red,
+                  child: _tabButton(
+                    label: "වැරදි",
+                    value: "incorrect",
+                    color: Colors.red,
+                    icon: Icons.cancel,
                   ),
                 ),
               ],
             ),
           ),
 
-          // Recordings List
+          const SizedBox(height: 18),
+
+          /// Recording list
           Expanded(
             child: recordings.isEmpty
                 ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.mic_none,
-                    size: 80,
-                    color: Colors.grey.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'තවම පටිගත කිරීම් නැත',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey.shade500,
-                    ),
-                  ),
-                ],
+              child: Text(
+                "තවම පටිගත කිරීම් නැත",
+                style: TextStyle(
+                  color: Colors.grey.shade500,
+                  fontSize: 14,
+                ),
               ),
             )
                 : ListView.builder(
@@ -480,100 +435,105 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
               itemCount: recordings.length,
               itemBuilder: (context, index) {
                 final recording = recordings[index];
-                return _buildRecordingCard(recording, index);
+                return _recordingCard(context, recording);
               },
             ),
           ),
         ],
       ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _pickAudioFile(selectedTab == 'correct'),
-        backgroundColor: Colors.orange,
-        icon: const Icon(Icons.add),
-        label: const Text('පටිගත කිරීම එක් කරන්න'),
+        backgroundColor: const Color(0xFFFF6D00),
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text(
+          "පටිගත කිරීම එක් කරන්න",
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
 
-  Widget _buildTabButton(String label, String value, IconData icon, Color color) {
+  Widget _tabButton({
+    required String label,
+    required String value,
+    required Color color,
+    required IconData icon,
+  }) {
     final isSelected = selectedTab == value;
+
     return InkWell(
       onTap: () => setState(() => selectedTab = value),
-      borderRadius: BorderRadius.circular(15),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(15),
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? color : Colors.grey,
-              size: 20,
-            ),
+            Icon(icon, size: 18, color: isSelected ? color : Colors.grey),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? color : Colors.grey,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontWeight: FontWeight.w700,
                 fontSize: 13,
+                color: isSelected ? color : Colors.grey,
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecordingCard(Recording recording, int index) {
+  Widget _recordingCard(BuildContext context, Recording recording) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.orange.shade100),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFF3E8), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.shade50,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(10),
+            color: const Color(0xFFFFF3E8),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(
-            Icons.audiotrack,
-            color: Colors.orange,
-          ),
+          child: const Icon(Icons.audiotrack, color: Color(0xFFFF6D00)),
         ),
         title: Text(
           recording.name,
           style: const TextStyle(
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: Color(0xFF3B1F47),
           ),
         ),
         subtitle: Text(
-          '${recording.dateAdded.day}/${recording.dateAdded.month}/${recording.dateAdded.year}',
+          "${recording.dateAdded.day}/${recording.dateAdded.month}/${recording.dateAdded.year}",
           style: TextStyle(
-            fontSize: 12,
             color: Colors.grey.shade600,
+            fontSize: 12,
           ),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.play_circle_filled, color: Colors.orange),
+          icon: const Icon(Icons.play_circle_fill, color: Color(0xFFFF6D00)),
           onPressed: () {
-            // Play audio functionality would go here
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Audio playback feature')),
             );

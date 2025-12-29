@@ -1,29 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:vocabuddy/pages/ActivityStart/activity_start_screen.dart';
 import 'package:vocabuddy/pages/doctor_home_screen.dart';
 
+// ===================================================================
+// COLORS (MATCH PREVIOUS UI)
+// ===================================================================
+const Color _kAccentColor = Color(0xFFFF9500);
+const Color _kAccentSoft = Color(0xFFFFE8CC);
+const Color _kTextDark = Color(0xFF2D3748);
+const Color _kTextMuted = Color(0xFF718096);
+const Color _kBg = Color(0xFFFFFBF5);
+const Color _kCard = Colors.white;
 
 // ===================================================================
-// 1. CONSTANTS, THEMES, AND DATA MODELS
+// SCREEN
 // ===================================================================
-
-// --- Colors & Themes ---
-const Color _kPrimaryTheme = Color(0xFF718096); // Slate Gray
-const Color _kAccentColor = Color(0xFFFF9500); // Main Action Orange
-const Color _kSecondaryHighlight = Color(0xFFFFAD33); // Secondary Orange
-const Color _kBackgroundColor = Color(0xFFE3F2FD); // Soft Blue Background for kids
-const Color _kCardColor = Colors.white; // White Card Base
-const Color _kShadowColor = Color(0xFF718096); // Slate Gray for shadows
-const Color _kTextColorDark = Color(0xFF718096); // Slate Gray for Main Text
-const Color _kTextColorMuted = Color(0xFF718096); // Slate Gray for Muted Text
-const Color _kSuccessColor = Color(0xFF4ADE80); // Green for audio button
-const Color _kMicColor = Color(0xFF2C7A7B); // Teal for mic button
-
-// ===================================================================
-// 2. MAIN STATEFUL WIDGET
-// ===================================================================
-
 class AntLearningActivity extends StatefulWidget {
   const AntLearningActivity({Key? key}) : super(key: key);
 
@@ -35,32 +26,21 @@ class _AntLearningActivityState extends State<AntLearningActivity>
     with TickerProviderStateMixin {
   bool _showCorrectFeedback = false;
   bool _showTryAgainFeedback = false;
-  late AnimationController _bounceController;
-  late AnimationController _pulseController;
-  late AnimationController _antController;
+
+  late final AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _antController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _bounceController.dispose();
     _pulseController.dispose();
-    _antController.dispose();
     super.dispose();
   }
 
@@ -69,12 +49,12 @@ class _AntLearningActivityState extends State<AntLearningActivity>
       _showCorrectFeedback = false;
       _showTryAgainFeedback = false;
     });
-    // TODO: Implement audio playback
-    print("🔊 Playing audio: ANT");
+
+    debugPrint("🔊 Playing audio: ANT");
+    // TODO: add audio playback
   }
 
   void _handleMicTap() {
-    // Simulate random feedback for demo
     final isCorrect = DateTime.now().millisecond % 2 == 0;
 
     setState(() {
@@ -82,11 +62,6 @@ class _AntLearningActivityState extends State<AntLearningActivity>
       _showTryAgainFeedback = !isCorrect;
     });
 
-    if (isCorrect) {
-      _bounceController.forward(from: 0);
-    }
-
-    // Auto-hide feedback after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() {
@@ -104,669 +79,476 @@ class _AntLearningActivityState extends State<AntLearningActivity>
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: textTheme,
-        scaffoldBackgroundColor: _kBackgroundColor,
+        scaffoldBackgroundColor: _kBg,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: _kBg,
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
+        ),
       ),
       child: Scaffold(
-        backgroundColor: _kBackgroundColor,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Playful Header
-              _buildPlayfulHeader(),
+        backgroundColor: _kBg,
 
-              // Main Content
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 20),
-
-                        // Animated Ant Card
-                        _buildAntCard(),
-                        const SizedBox(height: 24),
-
-                        // Word Label with fun styling
-                        _buildWordLabel(),
-                        const SizedBox(height: 32),
-
-                        // Action Buttons Row
-                        _buildActionButtons(),
-                        const SizedBox(height: 32),
-
-                        // Feedback Messages
-                        _buildFeedbackSection(),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+        /// ✅ Professional AppBar
+        appBar: AppBar(
+          elevation: 0.6,
+          shadowColor: Colors.black.withOpacity(0.06),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: _kTextDark),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlayfulHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        color: _kCardColor,
-        boxShadow: [
-          BoxShadow(
-            color: _kShadowColor.withOpacity(0.15),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _PlayfulIconButton(
-            icon: Icons.arrow_back_rounded,
-            color: _kAccentColor,
-            backgroundColor: const Color(0xFFFFE8CC), //back icon
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AntLearningActivity()),
-              );
-            },
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFE8CC), //lets play baby
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars_rounded, color: _kAccentColor, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  'Let"s Start Baby!',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: _kTextColorDark,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+          centerTitle: true,
+          title: Text(
+            "Practice",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+              color: _kTextDark,
             ),
           ),
-          _PlayfulIconButton(
-            icon: Icons.home_rounded,
-            color: _kSecondaryHighlight,
-            backgroundColor: const Color(0xFFFFE8CC), //home icon
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => DoctorHomeScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAntCard() {
-    return AnimatedBuilder(
-      animation: _antController,
-      builder: (context, child) {
-        final float = Tween<double>(begin: -5, end: 5)
-            .transform(Curves.easeInOut.transform(_antController.value));
-        return Transform.translate(
-          offset: Offset(0, float),
-          child: child,
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              _kCardColor,
-              const Color(0xFFFFF8F0), //box shadow color (ant photo)
-            ],
-          ),
-          borderRadius: BorderRadius.circular(32),
-          boxShadow: [
-            BoxShadow(
-              color: _kShadowColor.withOpacity(0.2),
-              offset: const Offset(0, 10),
-              blurRadius: 30,
-            ),
-            BoxShadow(
-              color: _kAccentColor.withOpacity(0.1),
-              offset: const Offset(0, -2),
-              blurRadius: 10,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            // Decorative stars
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStar(16, _kSecondaryHighlight),
-                _buildStar(12, _kAccentColor),
-                _buildStar(14, _kSuccessColor),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Ant Illustration Container
-            _buildAntIllustration(),
-            const SizedBox(height: 12),
-
-            // Decorative dots
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                5,
-                    (index) => Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: index == 1
-                        ? _kAccentColor
-                        : _kShadowColor.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStar(double size, Color color) {
-    return Icon(
-      Icons.star_rounded,
-      size: size,
-      color: color.withOpacity(0.6),
-    );
-  }
-
-  Widget _buildAntIllustration() {
-    return Container(
-      width: 180,
-      height: 180,
-      decoration: BoxDecoration(
-        color: Colors.amber,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: const Color(0xFFFFE8CC), // round shadow color
-          width: 4,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _kAccentColor.withOpacity(0.2),
-            offset: const Offset(0, 6),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-      child: ClipOval(
-        child: Container(
-          color: const Color(0xFFE3F2FD),
-          child: Center(
-            child: Image.asset(
-              'assets/images/ant.png',
-              width: 140,
-              height: 140,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildAntPlaceholder();
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_rounded, color: _kTextDark),
+              onPressed: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DoctorHomeScreen()),
+                      (route) => false,
+                );
               },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAntPlaceholder() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Container(
-        //   padding: const EdgeInsets.all(20),
-        //   decoration: BoxDecoration(
-        //     color: const Color(0xFFFFE8CC),
-        //     shape: BoxShape.circle,
-        //   ),
-        //   child: const Icon(
-        //     Icons.bug_report_rounded,
-        //     size: 60,
-        //     color: Color(0xFFFF6B6B),
-        //   ),
-        // ),
-        const SizedBox(height: 8),
-        Text(
-          '🐜',
-          style: TextStyle(fontSize: 40),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildWordLabel() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _kAccentColor.withOpacity(0.2),
-            _kSecondaryHighlight.withOpacity(0.2),
+            )
           ],
         ),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: _kAccentColor.withOpacity(0.3),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: _kAccentColor.withOpacity(0.2),
-            offset: const Offset(0, 4),
-            blurRadius: 15,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '',
-            style: TextStyle(fontSize: 28),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'ANT',
-            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-              fontSize: 52,
-              fontWeight: FontWeight.w900,
-              color: _kTextColorDark,
-              letterSpacing: 6,
-              shadows: [
-                Shadow(
-                  color: _kAccentColor.withOpacity(0.3),
-                  offset: const Offset(2, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '',
-            style: TextStyle(fontSize: 28),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Audio Button
-        _buildPlayfulActionButton(
-          icon: Icons.volume_up_rounded,
-          color: _kSuccessColor,
-          label: 'Listen',
-          emoji: '',
-          onTap: _handleAudioTap,
-          controller: _pulseController,
-        ),
-        const SizedBox(width: 24),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final w = constraints.maxWidth;
+            final isSmall = w < 360;
+            final isTablet = w >= 600;
 
-        // Microphone Button
-        _buildPlayfulActionButton(
-          icon: Icons.mic_rounded,
-          color: _kMicColor,
-          label: 'Speak',
-          emoji: '',
-          onTap: _handleMicTap,
-          controller: _pulseController,
-        ),
-      ],
-    );
-  }
+            final scale = (w / 390).clamp(0.90, 1.18);
+            final horizontal = isTablet ? 32.0 : (isSmall ? 16.0 : 22.0);
 
-  Widget _buildPlayfulActionButton({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required String emoji,
-    required VoidCallback onTap,
-    required AnimationController controller,
-  }) {
-    return Column(
-      children: [
-        AnimatedBuilder(
-          animation: controller,
-          builder: (context, child) {
-            final scale = 1.0 + (controller.value * 0.05);
-            return Transform.scale(
-              scale: scale,
-              child: child,
-            );
-          },
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(40),
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    color,
-                    color.withOpacity(0.8),
+            return SafeArea(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 18 * scale),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _HeaderCard(scale: scale),
+                    SizedBox(height: 18 * scale),
+
+                    /// Image Card
+                    _WordImageCard(scale: scale),
+                    SizedBox(height: 18 * scale),
+
+                    /// Word Label
+                    Center(child: _WordLabel(scale: scale)),
+                    SizedBox(height: 20 * scale),
+
+                    /// Buttons
+                    _ActionButtons(
+                      scale: scale,
+                      pulseController: _pulseController,
+                      onAudioTap: _handleAudioTap,
+                      onMicTap: _handleMicTap,
+                    ),
+
+                    SizedBox(height: 18 * scale),
+
+                    /// Feedback
+                    _FeedbackSection(
+                      scale: scale,
+                      showCorrect: _showCorrectFeedback,
+                      showTryAgain: _showTryAgainFeedback,
+                    ),
+
+                    SizedBox(height: 10 * scale),
                   ],
                 ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.5),
-                    offset: const Offset(0, 8),
-                    blurRadius: 20,
-                  ),
-                  BoxShadow(
-                    color: Colors.white.withOpacity(0.5),
-                    offset: const Offset(-2, -2),
-                    blurRadius: 8,
-                  ),
-                ],
               ),
-              child: Icon(
-                icon,
-                color: Colors.white, // Speaker and Mic icon color
-                size: 36,
-              ),
-            ),
-          ),
+            );
+          },
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(emoji, style: TextStyle(fontSize: 14)),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: color.withOpacity(0.9),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFeedbackSection() {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      transitionBuilder: (child, animation) {
-        return ScaleTransition(
-          scale: animation,
-          child: FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
-        );
-      },
-      child: _showCorrectFeedback
-          ? _buildCorrectFeedback()
-          : _showTryAgainFeedback
-          ? _buildTryAgainFeedback()
-          : const SizedBox(height: 120, key: ValueKey('empty')),
-    );
-  }
-
-  Widget _buildCorrectFeedback() {
-    return AnimatedBuilder(
-      key: const ValueKey('correct'),
-      animation: _bounceController,
-      builder: (context, child) {
-        final bounceValue =
-        Curves.elasticOut.transform(_bounceController.value);
-        return Transform.scale(
-          scale: 0.8 + (bounceValue * 0.2),
-          child: child,
-        );
-      },
-      child: _PlayfulFeedbackCard(
-        backgroundColor: const Color(0xFFE8F5E9),
-        borderColor: _kSuccessColor,
-        avatarColor: const Color(0xFFC8E6C9),
-        avatarEmoji: '🎉',
-        title: "It's Correct",
-        subtitle: "Kiddo!",
-        accentColor: _kSuccessColor,
       ),
-    );
-  }
-
-  Widget _buildTryAgainFeedback() {
-    return _PlayfulFeedbackCard(
-      key: const ValueKey('tryagain'),
-      backgroundColor: const Color(0xFFFFF3E0),
-      borderColor: _kAccentColor,
-      avatarColor: const Color(0xFFFFE8CC),
-      avatarEmoji: '💪',
-      title: "Try Again",
-      subtitle: "Baby!",
-      accentColor: _kAccentColor,
     );
   }
 }
 
 // ===================================================================
-// 3. PLAYFUL WIDGET COMPONENTS
+// COMPONENTS
 // ===================================================================
 
-class _PlayfulIconButton extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final Color backgroundColor;
-  final VoidCallback onTap;
+class _HeaderCard extends StatelessWidget {
+  final double scale;
+  const _HeaderCard({required this.scale});
 
-  const _PlayfulIconButton({
-    required this.icon,
-    required this.color,
-    required this.backgroundColor,
-    required this.onTap,
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(18 * scale),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [_kAccentColor, Color(0xFFFFAD33)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20 * scale),
+        boxShadow: [
+          BoxShadow(
+            color: _kAccentColor.withOpacity(0.20),
+            blurRadius: 20 * scale,
+            offset: Offset(0, 10 * scale),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 54 * scale,
+            height: 54 * scale,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.22),
+              borderRadius: BorderRadius.circular(16 * scale),
+            ),
+            child: Icon(Icons.mic_rounded, color: Colors.white, size: 26 * scale),
+          ),
+          SizedBox(width: 12 * scale),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Let’s practice!",
+                  style: GoogleFonts.poppins(
+                    fontSize: 16.5 * scale,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 6 * scale),
+                Text(
+                  "Listen to the word and speak clearly.",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.2 * scale,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.92),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WordImageCard extends StatelessWidget {
+  final double scale;
+  const _WordImageCard({required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(18 * scale),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(18 * scale),
+        border: Border.all(color: _kAccentSoft, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18 * scale,
+            offset: Offset(0, 10 * scale),
+          )
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            "Look at the picture",
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 13 * scale,
+              color: _kTextMuted,
+            ),
+          ),
+          SizedBox(height: 14 * scale),
+          Container(
+            width: 190 * scale,
+            height: 190 * scale,
+            decoration: BoxDecoration(
+              color: _kAccentSoft,
+              shape: BoxShape.circle,
+              border: Border.all(color: _kAccentSoft, width: 5),
+            ),
+            child: ClipOval(
+              child: Padding(
+                padding: EdgeInsets.all(18 * scale),
+                child: Image.asset(
+                  "assets/images/ant.png",
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) {
+                    return Center(
+                      child: Text("🐜", style: TextStyle(fontSize: 55 * scale)),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WordLabel extends StatelessWidget {
+  final double scale;
+  const _WordLabel({required this.scale});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 12 * scale),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(16 * scale),
+        border: Border.all(color: _kAccentSoft, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18 * scale,
+            offset: Offset(0, 10 * scale),
+          )
+        ],
+      ),
+      child: Text(
+        "ANT",
+        style: GoogleFonts.poppins(
+          fontSize: 36 * scale,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 4,
+          color: _kTextDark,
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButtons extends StatelessWidget {
+  final double scale;
+  final AnimationController pulseController;
+  final VoidCallback onAudioTap;
+  final VoidCallback onMicTap;
+
+  const _ActionButtons({
+    required this.scale,
+    required this.pulseController,
+    required this.onAudioTap,
+    required this.onMicTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: color.withOpacity(0.3),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.2),
-              offset: const Offset(0, 4),
-              blurRadius: 8,
-            ),
-          ],
+    final btnSize = 64.0 * scale;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _CircleActionButton(
+          scale: scale,
+          size: btnSize,
+          label: "Listen",
+          icon: Icons.volume_up_rounded,
+          color: _kAccentColor,
+          onTap: onAudioTap,
+          pulseController: pulseController,
         ),
-        child: Icon(
-          icon,
-          color: color,
-          size: 24,
+        SizedBox(width: 18 * scale),
+        _CircleActionButton(
+          scale: scale,
+          size: btnSize,
+          label: "Speak",
+          icon: Icons.mic_rounded,
+          color: _kTextDark,
+          onTap: onMicTap,
+          pulseController: pulseController,
         ),
-      ),
+      ],
     );
   }
 }
 
-class _PlayfulFeedbackCard extends StatelessWidget {
-  final Color backgroundColor;
-  final Color borderColor;
-  final Color avatarColor;
-  final String avatarEmoji;
+class _CircleActionButton extends StatelessWidget {
+  final double scale;
+  final double size;
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final AnimationController pulseController;
+
+  const _CircleActionButton({
+    required this.scale,
+    required this.size,
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    required this.pulseController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        AnimatedBuilder(
+          animation: pulseController,
+          builder: (_, child) {
+            final s = 1 + (pulseController.value * 0.03);
+            return Transform.scale(scale: s, child: child);
+          },
+          child: InkWell(
+            borderRadius: BorderRadius.circular(999),
+            onTap: onTap,
+            child: Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.28),
+                    blurRadius: 16 * scale,
+                    offset: Offset(0, 10 * scale),
+                  ),
+                ],
+              ),
+              child: Icon(icon, color: Colors.white, size: 28 * scale),
+            ),
+          ),
+        ),
+        SizedBox(height: 10 * scale),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12.5 * scale,
+            fontWeight: FontWeight.w600,
+            color: _kTextMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeedbackSection extends StatelessWidget {
+  final double scale;
+  final bool showCorrect;
+  final bool showTryAgain;
+
+  const _FeedbackSection({
+    required this.scale,
+    required this.showCorrect,
+    required this.showTryAgain,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 350),
+      child: showCorrect
+          ? _FeedbackCard(
+        scale: scale,
+        title: "Correct!",
+        subtitle: "Well done 👏",
+        color: const Color(0xFF22C55E),
+        bg: const Color(0xFFE8F5E9),
+        key: const ValueKey("correct"),
+      )
+          : showTryAgain
+          ? _FeedbackCard(
+        scale: scale,
+        title: "Try again",
+        subtitle: "You can do it 💪",
+        color: _kAccentColor,
+        bg: _kAccentSoft,
+        key: const ValueKey("try"),
+      )
+          : SizedBox(height: 110 * scale, key: const ValueKey("empty")),
+    );
+  }
+}
+
+class _FeedbackCard extends StatelessWidget {
+  final double scale;
   final String title;
   final String subtitle;
-  final Color accentColor;
+  final Color color;
+  final Color bg;
 
-  const _PlayfulFeedbackCard({
-    Key? key,
-    required this.backgroundColor,
-    required this.borderColor,
-    required this.avatarColor,
-    required this.avatarEmoji,
+  const _FeedbackCard({
+    super.key,
+    required this.scale,
     required this.title,
     required this.subtitle,
-    required this.accentColor,
-  }) : super(key: key);
+    required this.color,
+    required this.bg,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      padding: const EdgeInsets.all(24),
+      width: double.infinity,
+      padding: EdgeInsets.all(16 * scale),
       decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: borderColor.withOpacity(0.4),
-          width: 3,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: borderColor.withOpacity(0.3),
-            offset: const Offset(0, 8),
-            blurRadius: 24,
-          ),
-          BoxShadow(
-            color: Colors.white.withOpacity(0.8),
-            offset: const Offset(-2, -2),
-            blurRadius: 8,
-          ),
-        ],
+        color: bg,
+        borderRadius: BorderRadius.circular(16 * scale),
+        border: Border.all(color: color.withOpacity(0.30), width: 1.2),
       ),
       child: Row(
         children: [
-          // Playful Avatar
           Container(
-            width: 70,
-            height: 70,
+            width: 42 * scale,
+            height: 42 * scale,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  avatarColor,
-                  avatarColor.withOpacity(0.7),
-                ],
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: borderColor.withOpacity(0.3),
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: borderColor.withOpacity(0.3),
-                  offset: const Offset(0, 4),
-                  blurRadius: 12,
-                ),
-              ],
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14 * scale),
             ),
-            child: Center(
-              child: Text(
-                avatarEmoji,
-                style: TextStyle(fontSize: 36),
-              ),
-            ),
+            child: Icon(Icons.check_rounded, color: color, size: 24 * scale),
           ),
-          const SizedBox(width: 20),
-
-          // Text Content
+          SizedBox(width: 12 * scale),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: _kTextColorDark,
-                    height: 1.1,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14.5 * scale,
+                    color: _kTextDark,
                   ),
                 ),
+                SizedBox(height: 4 * scale),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: accentColor,
-                    height: 1.1,
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12.5 * scale,
+                    color: _kTextMuted,
                   ),
                 ),
               ],
             ),
-          ),
-
-          // Star decoration
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: borderColor.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.star_rounded,
-              color: accentColor,
-              size: 28,
-            ),
-          ),
+          )
         ],
       ),
     );
   }
 }
-
-// ===================================================================
-// MAIN APP (For Testing)
-// ===================================================================

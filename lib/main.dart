@@ -25,9 +25,9 @@ class VocaBuddyApp extends StatelessWidget {
         '/': (context) => const DoctorHomeScreen(),
         '/assign-activities': (context) => const SelectChildrenPage(),
         '/view-reports': (context) =>  ParentDashboardMain(),
-        '/voice-therapy':(context) => VoiceRecordingApp(),
-        '/attempt-session': (context) => const SpeechBuddyApp(),
-        '/upload-voice-recordings' : (context)=> VoiceRecordingApp()
+       // '/voice-therapy':(context) => VoiceRecordingApp(),
+        '/attempt-session': (context) => const InstructionsScreen(),
+        '/upload-voice-recordings' : (context)=> UploadVoiceRecordingsScreen()
 
         // '/view-reports': (context) => const ViewReportsPage(),
         // later:

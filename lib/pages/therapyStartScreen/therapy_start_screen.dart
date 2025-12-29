@@ -1,28 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-//import 'package:vocabuddy/main.dart';
 import 'package:vocabuddy/pages/activitySummaryScreen/activity_summary_page.dart';
 
-class SpeechBuddyApp extends StatelessWidget {
-  const SpeechBuddyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Speech Buddy',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.orange,
-        scaffoldBackgroundColor: const Color(0xFFFFFBF5),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-      ),
-      home: const InstructionsScreen(),
-    );
-  }
-}
-
 class InstructionsScreen extends StatefulWidget {
-  const InstructionsScreen({Key? key}) : super(key: key);
+  const InstructionsScreen({super.key});
 
   @override
   State<InstructionsScreen> createState() => _InstructionsScreenState();
@@ -30,134 +12,153 @@ class InstructionsScreen extends StatefulWidget {
 
 class _InstructionsScreenState extends State<InstructionsScreen>
     with TickerProviderStateMixin {
-  late AnimationController _headerController;
-  late AnimationController _cardsController;
-  late AnimationController _buttonController;
+  late final AnimationController _headerController;
+  late final AnimationController _listController;
 
   @override
   void initState() {
     super.initState();
 
     _headerController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 650),
       vsync: this,
     )..forward();
 
-    _cardsController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+    _listController = AnimationController(
+      duration: const Duration(milliseconds: 900),
       vsync: this,
-    )..forward(from: 0.3);
-
-    _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
+    )..forward(from: 0.2);
   }
 
   @override
   void dispose() {
     _headerController.dispose();
-    _cardsController.dispose();
-    _buttonController.dispose();
+    _listController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final titleStyle = GoogleFonts.poppins(
+      fontSize: 22,
+      fontWeight: FontWeight.w700,
+      color: const Color(0xFF2D3748),
+    );
+
+    final subtitleStyle = GoogleFonts.poppins(
+      fontSize: 13.5,
+      fontWeight: FontWeight.w400,
+      color: const Color(0xFF718096),
+      height: 1.6,
+    );
+
     return Scaffold(
+      backgroundColor: const Color(0xFFFFFBF5),
+
+      /// ✅ Professional AppBar
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFFBF5),
+        elevation: 0.6,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.black.withOpacity(0.06),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF2D3748)),
+          onPressed: () => Navigator.pop(context),
+        ),
+        centerTitle: true,
+        title: Text(
+          "Instructions",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: const Color(0xFF2D3748),
+          ),
+        ),
+      ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 10),
-
-                // Animated Header
+                /// ✅ Header card (Premium)
                 FadeTransition(
                   opacity: _headerController,
                   child: SlideTransition(
                     position: Tween<Offset>(
-                      begin: const Offset(0, -0.3),
+                      begin: const Offset(0, -0.12),
                       end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: _headerController,
-                      curve: Curves.easeOut,
-                    )),
-                    child: _buildHeader(),
+                    ).animate(
+                      CurvedAnimation(
+                        parent: _headerController,
+                        curve: Curves.easeOut,
+                      ),
+                    ),
+                    child: _buildPremiumHeader(),
                   ),
                 ),
-                const SizedBox(height: 32),
 
-                // Instructions Title
+                const SizedBox(height: 26),
+
+                /// ✅ Title + Subtitle
                 FadeTransition(
-                  opacity: _cardsController,
+                  opacity: _listController,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'එහෙනම් පටන් ගමු !',
-                        style: GoogleFonts.poppins(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF2D3748),
-                        ),
-                      ),
+                      Text('එහෙනම් පටන් ගමු !', style: titleStyle),
                       const SizedBox(height: 8),
                       Text(
                         'පටන් ගන්න පහත පියවරයන් අනුගමනය කරන්න',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF718096),
-                          height: 1.5,
-                        ),
+                        style: subtitleStyle,
+                      ),
+                      const SizedBox(height: 16),
+
+                      /// ✅ Progress
+                      _buildProgressIndicator(),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                /// ✅ Steps list (Professional Cards)
+                FadeTransition(
+                  opacity: _listController,
+                  child: Column(
+                    children: const [
+                      _StepCard(
+                        step: "01",
+                        title: "පිංතූරය හොදින් බලන්න",
+                        description: "Look carefully at the picture displayed.",
+                        icon: Icons.visibility_rounded,
+                      ),
+                      SizedBox(height: 14),
+                      _StepCard(
+                        step: "02",
+                        title: "පටිගත කිරීම සක්‍රිය කරන්න",
+                        description: "Tap the microphone when you’re ready.",
+                        icon: Icons.mic_rounded,
+                      ),
+                      SizedBox(height: 14),
+                      _StepCard(
+                        step: "03",
+                        title: "පැහැදිලිව කථා කරන්න",
+                        description: "Pronounce the word loud and clear.",
+                        icon: Icons.record_voice_over_rounded,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
 
-                // Animated Step Cards
-                _buildAnimatedStep(
-                  delay: 0,
-                  icon: Icons.visibility_rounded,
-                  emoji: '👀',
-                  title: 'පිංතූරය හොදින් බලන්න',
-                  description: 'Look carefully at the picture displayed',
-                  stepNumber: '1',
-                  color: const Color(0xFFFF9500),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 26),
 
-                _buildAnimatedStep(
-                  delay: 200,
-                  icon: Icons.touch_app_rounded,
-                  emoji: '👆',
-                  title: 'පටිගත කිරීම සක්‍රිය කරන්න',
-                  description: 'Tap the microphone when you\'re ready',
-                  stepNumber: '2',
-                  color: const Color(0xFFFF9500),
-                ),
-                const SizedBox(height: 16),
+                /// ✅ Professional Start Button
+                _buildPrimaryButton(),
 
-                _buildAnimatedStep(
-                  delay: 400,
-                  icon: Icons.record_voice_over_rounded,
-                  emoji: '🗣️',
-                  title: 'පැහැදිලිව කථා කරන්න',
-                  description: 'Pronounce the word loud and clear',
-                  stepNumber: '3',
-                  color: const Color(0xFFFF9500),
-                ),
-                const SizedBox(height: 32),
-
-                const SizedBox(height: 32),
-
-                // Animated Start Button
-                _buildAnimatedStartButton(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 18),
               ],
             ),
           ),
@@ -166,20 +167,20 @@ class _InstructionsScreenState extends State<InstructionsScreen>
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildPremiumHeader() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFFFF9500), Color(0xFFFFAD33)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF9500).withOpacity(0.3),
-            blurRadius: 20,
+            color: const Color(0xFFFF9500).withOpacity(0.25),
+            blurRadius: 22,
             offset: const Offset(0, 10),
           ),
         ],
@@ -187,15 +188,16 @@ class _InstructionsScreenState extends State<InstructionsScreen>
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(14),
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(14),
+              color: Colors.white.withOpacity(0.22),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(
               Icons.mic_rounded,
               color: Colors.white,
-              size: 32,
+              size: 28,
             ),
           ),
           const SizedBox(width: 16),
@@ -204,19 +206,19 @@ class _InstructionsScreenState extends State<InstructionsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'කොහොමද බබා !',
+                  "Speech Buddy",
                   style: GoogleFonts.poppins(
-                    fontSize: 26,
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  'සිංහල Interactive Learning Platform',
+                  "සිංහල Interactive Learning Platform",
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withOpacity(0.9),
                   ),
@@ -229,237 +231,189 @@ class _InstructionsScreenState extends State<InstructionsScreen>
     );
   }
 
-  Widget _buildAnimatedStep({
-    required int delay,
-    required IconData icon,
-    required String emoji,
-    required String title,
-    required String description,
-    required String stepNumber,
-    required Color color,
-  }) {
-    return TweenAnimationBuilder<double>(
-      duration: Duration(milliseconds: 600 + delay),
-      tween: Tween(begin: 0.0, end: 1.0),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0, 30 * (1 - value)),
-          child: Opacity(
-            opacity: value,
-            child: child,
+  Widget _buildProgressIndicator() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFE8CC),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                width: 120,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF9500),
+                  borderRadius: BorderRadius.circular(50),
+                ),
+              ),
+            ),
           ),
-        );
-      },
-      child: _InteractiveStepCard(
-        icon: icon,
-        emoji: emoji,
-        title: title,
-        description: description,
-        stepNumber: stepNumber,
-        color: color,
-      ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          "Step 1 of 3",
+          style: GoogleFonts.poppins(
+            fontSize: 12.5,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF718096),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildAnimatedStartButton() {
-    return AnimatedBuilder(
-      animation: _buttonController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: 1.0 + (_buttonController.value * 0.02),
-          child: child,
-        );
-      },
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.mediumImpact();
-            // Navigate to Home Screen
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const ActivitySummaryScreen()),
-            );
-          },
-
-          borderRadius: BorderRadius.circular(16),
-          child: Ink(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFF9500), Color(0xFFFFAD33)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF9500).withOpacity(0.4),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'පටන් ගන්න',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ],
-              ),
-            ),
+  Widget _buildPrimaryButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFFFF9500),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+        ),
+        onPressed: () {
+          HapticFeedback.mediumImpact();
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ActivitySummaryScreen(),
+            ),
+          );
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              "පටන් ගන්න",
+              style: GoogleFonts.poppins(
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _InteractiveStepCard extends StatefulWidget {
-  final IconData icon;
-  final String emoji;
+/// =======================
+/// STEP CARD (PROFESSIONAL)
+/// =======================
+class _StepCard extends StatelessWidget {
+  final String step;
   final String title;
   final String description;
-  final String stepNumber;
-  final Color color;
+  final IconData icon;
 
-  const _InteractiveStepCard({
-    required this.icon,
-    required this.emoji,
+  const _StepCard({
+    required this.step,
     required this.title,
     required this.description,
-    required this.stepNumber,
-    required this.color,
+    required this.icon,
   });
 
   @override
-  State<_InteractiveStepCard> createState() => _InteractiveStepCardState();
-}
-
-class _InteractiveStepCardState extends State<_InteractiveStepCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()
-          ..scale(_isPressed ? 0.97 : 1.0),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFFFFE8CC),
-              width: 2,
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFE8CC), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          /// Step number
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(14),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.color.withOpacity(_isPressed ? 0.1 : 0.15),
-                blurRadius: _isPressed ? 8 : 15,
-                offset: Offset(0, _isPressed ? 2 : 6),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [widget.color, widget.color.withOpacity(0.8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.color.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+            child: Center(
+              child: Text(
+                step,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFFFF9500),
                 ),
-                child: Center(
-                  child: Text(
-                    widget.stepNumber,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 14),
+
+          /// Main content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF2D3748),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFE8CC),
-                  borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF718096),
+                    height: 1.5,
+                  ),
                 ),
-                child: Text(
-                  widget.emoji,
-                  style: const TextStyle(fontSize: 28),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: GoogleFonts.poppins(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF2D3748),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.description,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: const Color(0xFF718096),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+
+          const SizedBox(width: 12),
+
+          /// Icon
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              icon,
+              color: const Color(0xFFFF9500),
+              size: 22,
+            ),
+          ),
+        ],
       ),
     );
-  }
-}
-
-class HapticFeedback {
-  static void mediumImpact() {
-    // This would use the actual haptic feedback in a real app
-    // For web/desktop, this is a no-op
   }
 }
