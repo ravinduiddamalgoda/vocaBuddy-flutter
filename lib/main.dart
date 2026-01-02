@@ -17,7 +17,8 @@ class VocaBuddyApp extends StatelessWidget {
     return MaterialApp(
       title: 'VocaBuddy',
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',      theme: ThemeData(
+      initialRoute: '/',
+      theme: ThemeData(
         fontFamily: 'Poppins',
       ),
       routes: {

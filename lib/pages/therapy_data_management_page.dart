@@ -448,7 +448,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),
@@ -494,7 +494,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFF6FF),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.2)),
+                  border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -502,7 +502,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withOpacity(0.1),
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Icon(
@@ -531,7 +531,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
               GestureDetector(
                 onTap: _isUploading ? null : _pickFile,
                 child: DragTarget<Object>(
-                  onWillAccept: (data) {
+                  onWillAcceptWithDetails: (details) {
                     if (!_isUploading) {
                       setState(() => _isDragging = true);
                       return true;
@@ -541,7 +541,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                   onLeave: (data) {
                     setState(() => _isDragging = false);
                   },
-                  onAccept: (data) {
+                  onAcceptWithDetails: (details) {
                     setState(() => _isDragging = false);
                     _pickFile();
                   },
@@ -568,7 +568,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -887,7 +887,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                         border: Border.all(color: const Color(0xFFE2E8F0)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
+                            color: Colors.black.withValues(alpha: 0.02),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
