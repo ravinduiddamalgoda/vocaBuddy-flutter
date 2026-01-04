@@ -44,6 +44,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_launcher_icons: "^0.14.4"
+
+flutter_icons:
+  android: "assets/heart.png"
+  ios: true
+  image_path: "assets/heart.png"
+
+  assets:
+    - assets/images/mascot_clouds.png
+    - assets/images/step_look.png
+    - assets/images/step_mic.png
+    - assets/images/step_speak.png
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -70,6 +82,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
      - assets/
+     - assets/TestVoice/
+     - assets/photos/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

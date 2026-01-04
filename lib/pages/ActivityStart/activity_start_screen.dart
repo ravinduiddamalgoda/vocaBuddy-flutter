@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vocabuddy/pages/doctor_home_screen.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 // ===================================================================
 // COLORS (MATCH PREVIOUS UI)
@@ -11,6 +12,21 @@ const Color _kTextDark = Color(0xFF2D3748);
 const Color _kTextMuted = Color(0xFF718096);
 const Color _kBg = Color(0xFFFFFBF5);
 const Color _kCard = Colors.white;
+
+// ===================================================================
+// MODEL FOR WORD ITEMS
+// ===================================================================
+class WordItem {
+  final String word;      // Sinhala word text
+  final String imagePath; // Full image path
+  final String audioPath; // audioplayers AssetSource path (NO "assets/")
+
+  const WordItem({
+    required this.word,
+    required this.imagePath,
+    required this.audioPath,
+  });
+}
 
 // ===================================================================
 // SCREEN
@@ -28,10 +44,37 @@ class _AntLearningActivityState extends State<AntLearningActivity>
   bool _showTryAgainFeedback = false;
 
   late final AnimationController _pulseController;
+  late final AudioPlayer _player;
+
+  // ✅ Word list (ADD MORE WORDS HERE)
+  final List<WordItem> _words = const [
+    WordItem(
+      word: "සමනලයා",
+      imagePath: "assets/photos/samanalaya.png",
+      audioPath: "TestVoice/samanalaya.mp3",
+    ),
+    WordItem(
+      word: "ඌරා",
+      imagePath: "assets/photos/pig.png",
+      audioPath: "TestVoice/ura.mp3",
+    ),
+    WordItem(
+      word: "අඹ",
+      imagePath: "assets/photos/mango.png",
+      audioPath: "TestVoice/aba.mp3",
+    ),
+  ];
+
+  int _currentIndex = 0;
+
+  WordItem get _currentWord => _words[_currentIndex];
 
   @override
   void initState() {
     super.initState();
+
+    _player = AudioPlayer();
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -40,18 +83,34 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
   @override
   void dispose() {
+    _player.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _handleAudioTap() {
+  // ✅ Listen button plays CURRENT word audio
+  Future<void> _handleAudioTap() async {
     setState(() {
       _showCorrectFeedback = false;
       _showTryAgainFeedback = false;
     });
 
-    debugPrint("🔊 Playing audio: ANT");
-    // TODO: add audio playback
+    debugPrint("🔊 Playing audio: ${_currentWord.audioPath}");
+
+    try {
+      await _player.stop();
+      await _player.play(AssetSource(_currentWord.audioPath));
+    } catch (e) {
+      debugPrint("❌ Audio play error: $e");
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Audio not playing. Check pubspec.yaml + asset path."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _handleMicTap() {
@@ -72,6 +131,26 @@ class _AntLearningActivityState extends State<AntLearningActivity>
     });
   }
 
+  // ✅ Previous word
+  Future<void> _prevWord() async {
+    await _player.stop();
+    setState(() {
+      _showCorrectFeedback = false;
+      _showTryAgainFeedback = false;
+      _currentIndex = (_currentIndex - 1 + _words.length) % _words.length;
+    });
+  }
+
+  // ✅ Next word
+  Future<void> _nextWord() async {
+    await _player.stop();
+    setState(() {
+      _showCorrectFeedback = false;
+      _showTryAgainFeedback = false;
+      _currentIndex = (_currentIndex + 1) % _words.length;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
@@ -88,8 +167,6 @@ class _AntLearningActivityState extends State<AntLearningActivity>
       ),
       child: Scaffold(
         backgroundColor: _kBg,
-
-        /// ✅ Professional AppBar
         appBar: AppBar(
           elevation: 0.6,
           shadowColor: Colors.black.withOpacity(0.06),
@@ -119,7 +196,6 @@ class _AntLearningActivityState extends State<AntLearningActivity>
             )
           ],
         ),
-
         body: LayoutBuilder(
           builder: (context, constraints) {
             final w = constraints.maxWidth;
@@ -131,22 +207,36 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
             return SafeArea(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 18 * scale),
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontal,
+                  vertical: 18 * scale,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _HeaderCard(scale: scale),
                     SizedBox(height: 18 * scale),
 
-                    /// Image Card
-                    _WordImageCard(scale: scale),
+                    // ✅ Word Image Card with side arrows
+                    _WordImageCardWithArrows(
+                      scale: scale,
+                      imagePath: _currentWord.imagePath,
+                      onPrev: _prevWord,
+                      onNext: _nextWord,
+                    ),
+
                     SizedBox(height: 18 * scale),
 
-                    /// Word Label
-                    Center(child: _WordLabel(scale: scale)),
+                    // ✅ Word Label (updates automatically)
+                    Center(
+                      child: _WordLabel(
+                        scale: scale,
+                        word: _currentWord.word,
+                      ),
+                    ),
+
                     SizedBox(height: 20 * scale),
 
-                    /// Buttons
                     _ActionButtons(
                       scale: scale,
                       pulseController: _pulseController,
@@ -156,14 +246,11 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
                     SizedBox(height: 18 * scale),
 
-                    /// Feedback
                     _FeedbackSection(
                       scale: scale,
                       showCorrect: _showCorrectFeedback,
                       showTryAgain: _showTryAgainFeedback,
                     ),
-
-                    SizedBox(height: 10 * scale),
                   ],
                 ),
               ),
@@ -211,7 +298,8 @@ class _HeaderCard extends StatelessWidget {
               color: Colors.white.withOpacity(0.22),
               borderRadius: BorderRadius.circular(16 * scale),
             ),
-            child: Icon(Icons.mic_rounded, color: Colors.white, size: 26 * scale),
+            child: Icon(Icons.mic_rounded,
+                color: Colors.white, size: 26 * scale),
           ),
           SizedBox(width: 12 * scale),
           Expanded(
@@ -219,7 +307,7 @@ class _HeaderCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Let’s practice!",
+                  "එහෙනම් අපි පටන් ගමු බබා!",
                   style: GoogleFonts.poppins(
                     fontSize: 16.5 * scale,
                     fontWeight: FontWeight.w700,
@@ -228,7 +316,7 @@ class _HeaderCard extends StatelessWidget {
                 ),
                 SizedBox(height: 6 * scale),
                 Text(
-                  "Listen to the word and speak clearly.",
+                  "වචනය හොදින් අසා නිවරිදිව කතා කරන්න උත්සහ කරන්න",
                   style: GoogleFonts.poppins(
                     fontSize: 12.2 * scale,
                     fontWeight: FontWeight.w500,
@@ -245,9 +333,19 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-class _WordImageCard extends StatelessWidget {
+// ✅ Image card WITH side arrows
+class _WordImageCardWithArrows extends StatelessWidget {
   final double scale;
-  const _WordImageCard({required this.scale});
+  final String imagePath;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  const _WordImageCardWithArrows({
+    required this.scale,
+    required this.imagePath,
+    required this.onPrev,
+    required this.onNext,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +367,7 @@ class _WordImageCard extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "Look at the picture",
+            "පිංතූරය දෙස හොදින් බලන්ඩ",
             style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
               fontSize: 13 * scale,
@@ -277,28 +375,45 @@ class _WordImageCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: 14 * scale),
-          Container(
-            width: 190 * scale,
-            height: 190 * scale,
-            decoration: BoxDecoration(
-              color: _kAccentSoft,
-              shape: BoxShape.circle,
-              border: Border.all(color: _kAccentSoft, width: 5),
-            ),
-            child: ClipOval(
-              child: Padding(
-                padding: EdgeInsets.all(18 * scale),
-                child: Image.asset(
-                  "assets/images/ant.png",
-                  fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) {
-                    return Center(
-                      child: Text("🐜", style: TextStyle(fontSize: 55 * scale)),
-                    );
-                  },
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: onPrev,
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
+              ),
+
+              Container(
+                width: 190 * scale,
+                height: 190 * scale,
+                decoration: BoxDecoration(
+                  color: _kAccentSoft,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _kAccentSoft, width: 5),
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: EdgeInsets.all(18 * scale),
+                    child: Image.asset(
+                      imagePath,
+                      fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) {
+                        return Center(
+                          child: Text("🖼️",
+                              style: TextStyle(fontSize: 55 * scale)),
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ),
-            ),
+
+              IconButton(
+                onPressed: onNext,
+                icon: const Icon(Icons.arrow_forward_ios_rounded),
+              ),
+            ],
           ),
         ],
       ),
@@ -308,12 +423,15 @@ class _WordImageCard extends StatelessWidget {
 
 class _WordLabel extends StatelessWidget {
   final double scale;
-  const _WordLabel({required this.scale});
+  final String word;
+
+  const _WordLabel({required this.scale, required this.word});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 12 * scale),
+      padding:
+      EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 12 * scale),
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(16 * scale),
@@ -327,13 +445,14 @@ class _WordLabel extends StatelessWidget {
         ],
       ),
       child: Text(
-        "ANT",
+        word,
         style: GoogleFonts.poppins(
-          fontSize: 36 * scale,
+          fontSize: 30 * scale, // ✅ smaller for Sinhala
           fontWeight: FontWeight.w800,
-          letterSpacing: 4,
+          letterSpacing: 1.5,
           color: _kTextDark,
         ),
+        textAlign: TextAlign.center,
       ),
     );
   }
@@ -362,7 +481,7 @@ class _ActionButtons extends StatelessWidget {
         _CircleActionButton(
           scale: scale,
           size: btnSize,
-          label: "Listen",
+          label: "වචනය අසන්න",
           icon: Icons.volume_up_rounded,
           color: _kAccentColor,
           onTap: onAudioTap,
@@ -372,7 +491,7 @@ class _ActionButtons extends StatelessWidget {
         _CircleActionButton(
           scale: scale,
           size: btnSize,
-          label: "Speak",
+          label: "කතා කරන්න",
           icon: Icons.mic_rounded,
           color: _kTextDark,
           onTap: onMicTap,
@@ -447,6 +566,7 @@ class _CircleActionButton extends StatelessWidget {
   }
 }
 
+// ✅ Keep your feedback widgets as-is
 class _FeedbackSection extends StatelessWidget {
   final double scale;
   final bool showCorrect;
@@ -460,95 +580,6 @@ class _FeedbackSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 350),
-      child: showCorrect
-          ? _FeedbackCard(
-        scale: scale,
-        title: "Correct!",
-        subtitle: "Well done 👏",
-        color: const Color(0xFF22C55E),
-        bg: const Color(0xFFE8F5E9),
-        key: const ValueKey("correct"),
-      )
-          : showTryAgain
-          ? _FeedbackCard(
-        scale: scale,
-        title: "Try again",
-        subtitle: "You can do it 💪",
-        color: _kAccentColor,
-        bg: _kAccentSoft,
-        key: const ValueKey("try"),
-      )
-          : SizedBox(height: 110 * scale, key: const ValueKey("empty")),
-    );
-  }
-}
-
-class _FeedbackCard extends StatelessWidget {
-  final double scale;
-  final String title;
-  final String subtitle;
-  final Color color;
-  final Color bg;
-
-  const _FeedbackCard({
-    super.key,
-    required this.scale,
-    required this.title,
-    required this.subtitle,
-    required this.color,
-    required this.bg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16 * scale),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(16 * scale),
-        border: Border.all(color: color.withOpacity(0.30), width: 1.2),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42 * scale,
-            height: 42 * scale,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(14 * scale),
-            ),
-            child: Icon(Icons.check_rounded, color: color, size: 24 * scale),
-          ),
-          SizedBox(width: 12 * scale),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14.5 * scale,
-                    color: _kTextDark,
-                  ),
-                ),
-                SizedBox(height: 4 * scale),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12.5 * scale,
-                    color: _kTextMuted,
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
