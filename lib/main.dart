@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'pages/splashScreen/splashScreen.dart';
 import 'pages/doctor_home_screen.dart';
 import 'pages/therapyGenerate/SelectChildrenPage.dart';
 import 'pages/Parent Awareness/parent_dashboard_main.dart';
@@ -6,7 +7,6 @@ import 'pages/inputVoices/input_new_voices.dart';
 import 'pages/therapyStartScreen/therapy_start_screen.dart';
 import 'api/api_client.dart';
 import 'package:vocabuddy/api/api_client.dart';
-
 
 
 void main() {
@@ -26,18 +26,12 @@ class VocaBuddyApp extends StatelessWidget {
         fontFamily: 'Poppins',
       ),
       routes: {
-        '/': (context) => const DoctorHomeScreen(),
+        '/': (context) => const SplashScreen(), // ✅ START HERE
+        '/home': (context) => const DoctorHomeScreen(), // ✅ HOME ROUTE
         '/assign-activities': (context) => const SelectChildrenPage(),
-        '/view-reports': (context) =>  ParentDashboardMain(),
-       // '/voice-therapy':(context) => VoiceRecordingApp(),
+        '/view-reports': (context) => ParentDashboardMain(),
         '/attempt-session': (context) => const InstructionsScreen(),
-        '/upload-voice-recordings' : (context)=> UploadVoiceRecordingsScreen()
-
-        // '/view-reports': (context) => const ViewReportsPage(),
-        // later:
-        // '/sessions': (context) => const SessionsPage(),
-        // '/chat': (context) => const ChatPage(),
-        // '/account': (context) => const AccountPage(),
+        '/upload-voice-recordings': (context) => UploadVoiceRecordingsScreen(),
       },
     );
   }

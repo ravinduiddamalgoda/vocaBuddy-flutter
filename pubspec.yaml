@@ -43,18 +43,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: "^0.14.4"
+  flutter_lints: ^5.0.0
 
 flutter_icons:
-  android: "assets/heart.png"
+  android: true
   ios: true
-  image_path: "assets/heart.png"
+  image_path: "assets/appIcon/background_photo.png"
 
-  assets:
-    - assets/images/mascot_clouds.png
-    - assets/images/step_look.png
-    - assets/images/step_mic.png
-    - assets/images/step_speak.png
 
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -79,6 +74,8 @@ flutter:
   assets:
      - assets/
      - assets/photos/
+     - assets/appIcon/
+     - assets/splashScreen/
      - assets/TestVoice/
   #   - images/a_dot_ham.jpeg
 

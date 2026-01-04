@@ -46,7 +46,6 @@ class _AntLearningActivityState extends State<AntLearningActivity>
   late final AnimationController _pulseController;
   late final AudioPlayer _player;
 
-  // ✅ Word list (ADD MORE WORDS HERE)
   final List<WordItem> _words = const [
     WordItem(
       word: "සමනලයා",
