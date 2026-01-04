@@ -43,18 +43,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: "^0.14.4"
+  flutter_lints: ^5.0.0
 
 flutter_icons:
-  android: "assets/heart.png"
+  android: true
   ios: true
-  image_path: "assets/heart.png"
+  image_path: "assets/appIcon/app_icon.png"
 
-  assets:
-    - assets/images/mascot_clouds.png
-    - assets/images/step_look.png
-    - assets/images/step_mic.png
-    - assets/images/step_speak.png
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -63,10 +58,6 @@ flutter_icons:
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
 
-flutter_icons:
-  android: "assets/heart.png"
-  ios: true
-  image_path: "assets/heart.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -84,6 +75,8 @@ flutter:
      - assets/
      - assets/TestVoice/
      - assets/photos/
+     - assets/appIcon/
+     - assets/splashScreen/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
