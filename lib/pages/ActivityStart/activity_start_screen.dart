@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:vocabuddy/pages/doctor_home_screen.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 // ===================================================================
 // COLORS (MATCH PREVIOUS UI)
@@ -29,9 +30,19 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
   late final AnimationController _pulseController;
 
+  // ✅ Audio player
+  late final AudioPlayer _player;
+
+  // ✅ Your hardcoded asset audio path (NO "assets/" here)
+  static const String _antAudioAsset = 'TestVoice/samanalaya.mp3';
+
+
   @override
   void initState() {
     super.initState();
+
+    _player = AudioPlayer();
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -40,18 +51,34 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
   @override
   void dispose() {
+    _player.dispose();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _handleAudioTap() {
+  // ✅ Play audio when Listen tapped
+  Future<void> _handleAudioTap() async {
     setState(() {
       _showCorrectFeedback = false;
       _showTryAgainFeedback = false;
     });
 
-    debugPrint("🔊 Playing audio: ANT");
-    // TODO: add audio playback
+    debugPrint("🔊 Playing audio: $_antAudioAsset");
+
+    try {
+      await _player.stop(); // stop previous if any
+      await _player.play(AssetSource(_antAudioAsset));
+    } catch (e) {
+      debugPrint("❌ Audio play error: $e");
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Audio not playing. Check pubspec.yaml + asset path."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _handleMicTap() {
@@ -131,7 +158,10 @@ class _AntLearningActivityState extends State<AntLearningActivity>
 
             return SafeArea(
               child: SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: 18 * scale),
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontal,
+                  vertical: 18 * scale,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -211,7 +241,8 @@ class _HeaderCard extends StatelessWidget {
               color: Colors.white.withOpacity(0.22),
               borderRadius: BorderRadius.circular(16 * scale),
             ),
-            child: Icon(Icons.mic_rounded, color: Colors.white, size: 26 * scale),
+            child: Icon(Icons.mic_rounded,
+                color: Colors.white, size: 26 * scale),
           ),
           SizedBox(width: 12 * scale),
           Expanded(
@@ -289,11 +320,12 @@ class _WordImageCard extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(18 * scale),
                 child: Image.asset(
-                  "assets/images/ant.png",
+                  "assets/photos/samanalaya.png",
                   fit: BoxFit.contain,
                   errorBuilder: (_, __, ___) {
                     return Center(
-                      child: Text("🐜", style: TextStyle(fontSize: 55 * scale)),
+                      child: Text("🐜",
+                          style: TextStyle(fontSize: 55 * scale)),
                     );
                   },
                 ),
@@ -313,7 +345,8 @@ class _WordLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 12 * scale),
+      padding:
+      EdgeInsets.symmetric(horizontal: 24 * scale, vertical: 12 * scale),
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(16 * scale),
@@ -327,7 +360,7 @@ class _WordLabel extends StatelessWidget {
         ],
       ),
       child: Text(
-        "ANT",
+        "සමනලයා",
         style: GoogleFonts.poppins(
           fontSize: 36 * scale,
           fontWeight: FontWeight.w800,
