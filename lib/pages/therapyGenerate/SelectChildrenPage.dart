@@ -1,6 +1,11 @@
 // select_children_page.dart
 import 'package:flutter/material.dart';
 import 'ActivityReviewPage.dart';
+import 'package:vocabuddy/api/api_client.dart';
+import 'dart:math';
+import 'WordSelectionPage.dart';
+
+
 
 class SelectChildrenPage extends StatefulWidget {
   const SelectChildrenPage({Key? key}) : super(key: key);
@@ -10,6 +15,10 @@ class SelectChildrenPage extends StatefulWidget {
 }
 
 String _searchQuery = "";
+
+int _wordCount = 8;
+final List<int> _wordCountOptions = [3, 5, 8, 10];
+
 
 class _SelectChildrenPageState extends State<SelectChildrenPage> {
   final TextEditingController _promptController = TextEditingController();
@@ -25,6 +34,46 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
     'Phonological LvL 01',
     'Phonological LvL 02',
   ];
+
+  //fetch data
+  final ApiClient api = ApiClient();
+
+  int _levelFromText(String text) {
+    // "Phonological LvL 01" -> 1
+    if (text.contains("01")) return 1;
+    if (text.contains("02")) return 2;
+    return 3; // default fallback
+  }
+
+  String _extractLetter(String prompt) {
+    // very simple rule: take last Sinhala character in the prompt
+    // example: "Give me words starting with letter ස" -> "ස"
+    // If not found, return the whole prompt trimmed (last resort)
+    final trimmed = prompt.trim();
+    for (int i = trimmed.length - 1; i >= 0; i--) {
+      final ch = trimmed[i];
+      // Sinhala unicode range roughly: 0D80–0DFF
+      final code = ch.runes.first;
+      if (code >= 0x0D80 && code <= 0x0DFF) return ch;
+    }
+    return trimmed.isNotEmpty ? trimmed : "ස";
+  }
+
+  String _detectMode(String prompt) {
+    final p = prompt.toLowerCase();
+    if (p.contains("start") || p.contains("begin") || p.contains("initial")) {
+      return "starts_with";
+    }
+    if (p.contains("end") || p.contains("final")) {
+      return "ends_with";
+    }
+    if (p.contains("middle") || p.contains("medial") || p.contains("contain")) {
+      return "contains";
+    }
+    // default
+    return "starts_with";
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -328,6 +377,89 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
               ),
               const SizedBox(height: 16),
 
+              // Word Count Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF4E6),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.format_list_numbered,
+                        color: Color(0xFF64748B),
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Word Count',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$_wordCount words',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuButton<int>(
+                      icon: const Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: Color(0xFFFF9800),
+                        size: 28,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      offset: const Offset(0, 8),
+                      onSelected: (int value) {
+                        setState(() {
+                          _wordCount = value;
+                        });
+                      },
+                      itemBuilder: (BuildContext context) {
+                        return _wordCountOptions.map((int c) {
+                          return PopupMenuItem<int>(
+                            value: c,
+                            child: Text("$c words"),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+
               // Activity Prompt Card
               Container(
                 padding: const EdgeInsets.all(20),
@@ -450,22 +582,70 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: (hasSelectedChildren && hasPrompt)
-                        ? () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ActivityReviewPage(
-                            selectedChildren: _children
-                                .where((child) => child['selected'])
-                                .toList(),
-                            activityType: _selectedActivityType,
-                            prompt: _promptController.text,
-                          ),
-                        ),
-                      );
-                    }
-                        : null,
+                      onTap: (hasSelectedChildren && hasPrompt)
+                          ? () async {
+                        final selectedChild = _children.firstWhere((c) => c['selected'] == true);
+                        final childId = selectedChild['name']; // for now using name as id
+
+                        final prompt = _promptController.text;
+                        final letter = _extractLetter(prompt);
+                        final mode = _detectMode(prompt);
+                        final level = _levelFromText(_selectedActivityType);
+
+                        // you can change count later from UI, for now fixed
+                        final count = _wordCount;
+
+
+                        try {
+                          final data = await api.previewActivity(
+                            childId: childId,
+                            letter: letter,
+                            mode: mode,
+                            level: level,
+                            count: count,
+                          );
+
+                          final missing = (data["missing_count"] ?? 0) as int;
+
+                          if (missing > 0) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => WordSelectionPage(
+                                  selectedChildren: _children.where((child) => child['selected']).toList(),
+                                  activityType: _selectedActivityType,
+                                  prompt: prompt,
+                                  preview: data,
+                                  childId: childId,
+                                  letter: letter,
+                                  mode: mode,
+                                  level: level,
+                                  count: count,
+                                ),
+                              ),
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ActivityReviewPage(
+                                  selectedChildren: _children.where((child) => child['selected']).toList(),
+                                  activityType: _selectedActivityType,
+                                  prompt: prompt,
+                                  apiPreview: data,
+                                ),
+                              ),
+                            );
+                          }
+
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("API error: $e")),
+                          );
+                        }
+                      }
+                          : null,
+
                     borderRadius: BorderRadius.circular(20),
                     child: Center(
                       child: Row(

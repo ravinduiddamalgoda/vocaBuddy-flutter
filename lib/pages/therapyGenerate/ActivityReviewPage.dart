@@ -7,12 +7,14 @@ class ActivityReviewPage extends StatefulWidget {
   final List<Map<String, dynamic>> selectedChildren;
   final String activityType;
   final String prompt;
+  final Map<String, dynamic> apiPreview;
 
   const ActivityReviewPage({
     Key? key,
     required this.selectedChildren,
     required this.activityType,
     required this.prompt,
+    required this.apiPreview,
   }) : super(key: key);
 
   @override
@@ -27,33 +29,42 @@ class _ActivityReviewPageState extends State<ActivityReviewPage> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlayingAudio = false;
 
+  List<String> _getWords() {
+    final preview = widget.apiPreview ?? {};
+    final items = (preview["items"] as List? ?? []);
+    return items
+        .map((e) => (e["text"] ?? "").toString())
+        .where((w) => w.isNotEmpty)
+        .toList();
+  }
+
   Map<String, dynamic> _generatedActivity = {};
+  List<String> _apiWords = [];
 
   @override
   void initState() {
     super.initState();
     _promptController.text = widget.prompt;
-    _generateActivity();
+    _loadFromPreview();
   }
 
-  void _generateActivity() async {
-    setState(() {
-      _isGenerating = true;
-    });
-
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
+  void _loadFromPreview() {
+    final items = (widget.apiPreview["items"] as List?) ?? [];
+    final words = items.map((e) => e["text"].toString()).toList();
+    final firstWord = words.isNotEmpty ? words.first : "No word found";
 
     setState(() {
-      // Simulate backend response based on activity level
-      bool isLevel1 = widget.activityType.contains('01');
-
+      _apiWords = words;
       _generatedActivity = {
-        'content': isLevel1 ? 'Tiger' : 'The tiger is playing in the garden',
-        'type': isLevel1 ? 'word' : 'sentence',
-        'imageUrl': 'https://picsum.photos/id/1/200/300', // From backend
-        'audioUrl': 'https://example.com/tiger_audio.mp3', // From backend
-        'targetSound': '/t/',
+        'content': firstWord,
+        'type': 'word',
+        'imageUrl': 'https://picsum.photos/id/1/200/300', // keep placeholder for now
+        'audioUrl': '', // later
+        'targetSound': widget.apiPreview["target_letter"] ?? '',
+        'missing_count': widget.apiPreview["missing_count"] ?? 0,
+        'returned_count': widget.apiPreview["returned_count"] ?? items.length,
+        'requested_count': widget.apiPreview["requested_count"] ?? 0,
+        'can_generate': widget.apiPreview["can_generate"] ?? false,
       };
       _isGenerating = false;
     });
@@ -381,198 +392,237 @@ class _ActivityReviewPageState extends State<ActivityReviewPage> {
                   ),
                 )
               else ...[
-                // Main Activity Card
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Image Section
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(24),
-                            ),
+                // Main Activity Card (UPDATED TO PAGEVIEW)
+                Builder(
+                  builder: (context) {
+                    final words = _apiWords.isNotEmpty
+                        ? _apiWords
+                        : [(_generatedActivity['content'] ?? "No word found").toString()];
+
+                    return SizedBox(
+                      height: 560, // enough for image + word + buttons
+                      child: PageView.builder(
+                        itemCount: words.length,
+                        controller: PageController(viewportFraction: 0.92),
+                        itemBuilder: (context, index) {
+                          final word = words[index];
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
                             child: Container(
                               width: double.infinity,
-                              height: 320,
-                              color: const Color(0xFFF8FAFC),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      width: 140,
-                                      height: 140,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF4E6),
-                                        borderRadius: BorderRadius.circular(24),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(24),
-                                        child: Image.network(
-                                          _generatedActivity['imageUrl'] ?? "https://picsum.photos/200/300",
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    const Text('Activity Image'),
-                                  ],
-                                ),
-                              ),
-
-                            ),
-                          ),
-                          Positioned(
-                            top: 16,
-                            right: 16,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFF9800),
-                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(24),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFF9800).withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 4),
                                   ),
                                 ],
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                              child: Column(
                                 children: [
-                                  const Icon(
-                                    Icons.graphic_eq,
-                                    size: 16,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    _generatedActivity['targetSound'],
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                                  // Image Section (same for now)
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: const BorderRadius.vertical(
+                                          top: Radius.circular(24),
+                                        ),
+                                        child: Container(
+                                          width: double.infinity,
+                                          height: 320,
+                                          color: const Color(0xFFF8FAFC),
+                                          child: Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Container(
+                                                  width: 140,
+                                                  height: 140,
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFFFF4E6),
+                                                    borderRadius: BorderRadius.circular(24),
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.circular(24),
+                                                    child: Image.network(
+                                                      _generatedActivity['imageUrl'] ??
+                                                          "https://picsum.photos/200/300",
+                                                      fit: BoxFit.cover,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 20),
+                                                const Text('Activity Image'),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
 
-                      // Content and Audio Section
-                      Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          children: [
-                            // Word/Sentence
-                            Text(
-                              _generatedActivity['content'],
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF334155),
-                                height: 1.3,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            // Type Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF4E6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                _generatedActivity['type'] == 'word'
-                                    ? 'Single Word'
-                                    : 'Sentence',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFFF9800),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-
-                            // Play Audio Button
-                            InkWell(
-                              onTap: _playAudio,
-                              borderRadius: BorderRadius.circular(20),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 32,
-                                  vertical: 18,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                                      // Target sound badge (same for now)
+                                      Positioned(
+                                        top: 16,
+                                        right: 16,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFF9800),
+                                            borderRadius: BorderRadius.circular(12),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(0xFFFF9800).withOpacity(0.4),
+                                                blurRadius: 8,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.graphic_eq,
+                                                size: 16,
+                                                color: Colors.white,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _generatedActivity['targetSound'] ?? "/?/",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF9800).withOpacity(0.4),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 8),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      _isPlayingAudio
-                                          ? Icons.pause_circle_filled
-                                          : Icons.play_circle_filled,
-                                      color: Colors.white,
-                                      size: 32,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _isPlayingAudio ? 'Playing...' : 'Play Voice',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 17,
-                                        fontWeight: FontWeight.w600,
+
+                                  // Content and Audio Section (UPDATED TO FIX OVERFLOW)
+                                  Expanded(
+                                    child: SingleChildScrollView(
+                                      padding: const EdgeInsets.all(28),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // ✅ Word changes per swipe
+                                          Text(
+                                            word,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 32,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF334155),
+                                              height: 1.3,
+                                              letterSpacing: -0.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Type Badge
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFF4E6),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              _generatedActivity['type'] == 'word'
+                                                  ? 'Single Word'
+                                                  : 'Sentence',
+                                              style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFFFF9800),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+
+                                          // Play Audio Button (same for now)
+                                          InkWell(
+                                            onTap: _playAudio,
+                                            borderRadius: BorderRadius.circular(20),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(
+                                                horizontal: 32,
+                                                vertical: 18,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                borderRadius: BorderRadius.circular(20),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: const Color(0xFFFF9800).withOpacity(0.4),
+                                                    blurRadius: 20,
+                                                    offset: const Offset(0, 8),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    _isPlayingAudio
+                                                        ? Icons.pause_circle_filled
+                                                        : Icons.play_circle_filled,
+                                                    color: Colors.white,
+                                                    size: 32,
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Text(
+                                                    _isPlayingAudio ? 'Playing...' : 'Play Voice',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 17,
+                                                      fontWeight: FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 10),
+
+                                          // Optional small indicator
+                                          Text(
+                                            "${index + 1} / ${words.length}  •  Swipe",
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
+
                 const SizedBox(height: 32),
 
                 // Accept Button
@@ -601,12 +651,11 @@ class _ActivityReviewPageState extends State<ActivityReviewPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                ActivityAssignmentConfirmationPage(
-                                  selectedChildren: widget.selectedChildren,
-                                  activity: _generatedActivity,
-                                  activityType: widget.activityType,
-                                ),
+                            builder: (context) => ActivityAssignmentConfirmationPage(
+                              selectedChildren: widget.selectedChildren,
+                              activity: _generatedActivity,
+                              activityType: widget.activityType,
+                            ),
                           ),
                         );
                       },

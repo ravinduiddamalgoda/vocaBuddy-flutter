@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
+import '../api/api_client.dart';
 
-class DoctorHomeScreen extends StatelessWidget {
+final ApiClient api = ApiClient();
+
+bool loadingPreview = true;
+String? previewError;
+List<String> previewWords = [];
+
+
+class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({super.key});
 
+  @override
+  State<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
+}
+
+class _DoctorHomeScreenState extends State<DoctorHomeScreen> {
   void _go(BuildContext context, String route) {
     Navigator.pushNamed(context, route);
   }
@@ -376,7 +389,7 @@ class DoctorHomeScreen extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
-                // ✅ NEW: Upload New Voice Recordings button
+                // Upload New Voice Recordings button
                 GestureDetector(
                   onTap: () => _go(context, '/upload-voice-recordings'),
                   child: Container(

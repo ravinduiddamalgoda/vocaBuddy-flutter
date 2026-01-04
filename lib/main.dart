@@ -4,6 +4,9 @@ import 'pages/therapyGenerate/SelectChildrenPage.dart';
 import 'pages/Parent Awareness/parent_dashboard_main.dart';
 import 'pages/inputVoices/input_new_voices.dart';
 import 'pages/therapyStartScreen/therapy_start_screen.dart';
+import 'api/api_client.dart';
+import 'package:vocabuddy/api/api_client.dart';
+
 
 
 void main() {
