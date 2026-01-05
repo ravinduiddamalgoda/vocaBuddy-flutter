@@ -19,6 +19,9 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
   final UploadService _uploadService = UploadService();
   UploadTask? _currentUploadTask;
 
+  // Track uploaded file name to show success when it appears in list
+  String? _pendingUploadFileName;
+
   // Delete progress tracking
   bool _isDeleting = false;
   double _deleteProgress = 0.0;
@@ -29,11 +32,11 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
     super.initState();
     _loadPdfFiles();
     _uploadService.addListener(_onUploadUpdate);
-    
+
     // Check for active uploads when page loads (in case user navigated away and came back)
     _checkActiveUploads();
   }
-  
+
   void _checkActiveUploads() {
     final uploads = _uploadService.activeUploads.values.toList();
     if (uploads.isNotEmpty) {
@@ -57,7 +60,7 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
       if (mounted) {
         // Check for active uploads when page becomes visible again
         _checkActiveUploads();
-        
+
         if (_uploadedFiles.isEmpty && !_isLoading) {
           _loadPdfFiles();
         }
@@ -78,37 +81,33 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
         // Get the most recent/active upload task
         final activeTask = uploads.last;
         final previousStatus = _currentUploadTask?.status;
-        
+        final uploadedFileName = activeTask.fileName;
+
         setState(() {
           _currentUploadTask = activeTask;
         });
 
-        // Only reload files when upload transitions from processing/completed to completed
-        // Don't reload during active upload/processing
-        if (activeTask.status == UploadStatus.completed && 
+        // Show success message immediately when upload completes (progress reaches 100%)
+        if (activeTask.status == UploadStatus.completed &&
             previousStatus != UploadStatus.completed) {
-          // Upload just completed - reload files after a delay
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted && _currentUploadTask?.status == UploadStatus.completed) {
-              _loadPdfFiles();
-            }
-          });
-        }
-      } else {
-        // No active uploads - only reload if we had an upload before
-        final hadUpload = _currentUploadTask != null;
-        setState(() {
-          _currentUploadTask = null;
-        });
-        
-        // Only reload if we just finished an upload (not on initial load)
-        if (hadUpload) {
-          Future.delayed(const Duration(seconds: 1), () {
+          // Show success message immediately
+          _showSuccessSnackBar('${activeTask.fileName} uploaded successfully!');
+
+          // Store the uploaded file name for later verification
+          _pendingUploadFileName = uploadedFileName;
+
+          // Refresh the file list
+          Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted) {
               _loadPdfFiles();
             }
           });
         }
+      } else {
+        // No active uploads
+        setState(() {
+          _currentUploadTask = null;
+        });
       }
     }
   }
@@ -148,6 +147,9 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
         } else {
           print('⚠️ No PDF files found (list is empty)');
         }
+
+        // Clear the pending upload file name after refresh
+        _pendingUploadFileName = null;
       }
     } catch (e) {
       if (mounted) {
@@ -543,6 +545,9 @@ class _TherapyDataManagementPageState extends State<TherapyDataManagementPage> {
                   },
                   onAcceptWithDetails: (details) {
                     setState(() => _isDragging = false);
+                    // Note: DragTarget doesn't directly handle OS file drops
+                    // For mobile, opening file picker is the standard approach
+                    // For web/desktop file drag-drop, would need platform-specific implementation
                     _pickFile();
                   },
                   builder: (context, candidateData, rejectedData) {

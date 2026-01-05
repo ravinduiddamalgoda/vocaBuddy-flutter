@@ -37,35 +37,8 @@ class UploadService extends ChangeNotifier {
       // Upload phase: 0-70% progress
       task.status = UploadStatus.uploading;
       
-      // Start processing simulation that runs in parallel
-      int simulatedProgress = 70;
-      bool processingComplete = false;
-      
-      final processingSimulation = (() async {
-        // Wait a bit for upload to reach 70%
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // Switch to processing status
-        if (_activeUploads.containsKey(taskId)) {
-          task.status = UploadStatus.processing;
-          task.progress = 0.7;
-          notifyListeners();
-        }
-        
-        // Simulate processing progress (70% -> 95%)
-        while (!processingComplete && simulatedProgress < 95 && _activeUploads.containsKey(taskId)) {
-          await Future.delayed(const Duration(milliseconds: 300));
-          if (task.status == UploadStatus.processing && _activeUploads.containsKey(taskId)) {
-            simulatedProgress += 3;
-            if (simulatedProgress <= 95) {
-              task.progress = simulatedProgress / 100.0;
-              notifyListeners();
-            }
-          }
-        }
-      })();
-      
-      // Upload file (this blocks until backend processing is complete)
+      // Upload file (this returns immediately after file is saved to disk)
+      // Processing happens in background on the server
       await ApiService.uploadPdf(
         file,
         fileName,
@@ -78,19 +51,34 @@ class UploadService extends ChangeNotifier {
         },
       );
       
-      // API call complete - processing is done
-      processingComplete = true;
-      await processingSimulation; // Let simulation finish if needed
+      // File is now uploaded to database/filesystem
+      // Success message will be shown when file appears in the list (handled by page)
+      
+      // Continue with processing simulation for UI feedback (optional)
+      // Switch to processing status
+      if (_activeUploads.containsKey(taskId)) {
+        task.status = UploadStatus.processing;
+        task.progress = 0.7;
+        notifyListeners();
+      }
+      
+      // Simulate processing progress (70% -> 100%) for visual feedback
+      int simulatedProgress = 70;
+      while (simulatedProgress < 100 && _activeUploads.containsKey(taskId)) {
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (task.status == UploadStatus.processing && _activeUploads.containsKey(taskId)) {
+          simulatedProgress += 5;
+          if (simulatedProgress <= 100) {
+            task.progress = simulatedProgress / 100.0;
+            notifyListeners();
+          }
+        }
+      }
       
       // Set to 100% and mark as completed
       task.status = UploadStatus.completed;
       task.progress = 1.0;
       notifyListeners();
-
-      // Show success notification only after processing is complete
-      // Use a small delay to ensure UI is ready
-      await Future.delayed(const Duration(milliseconds: 100));
-      _showSuccessNotification(fileName);
 
       // Remove from active uploads after a delay
       Future.delayed(const Duration(seconds: 2), () {

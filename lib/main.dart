@@ -4,6 +4,8 @@ import 'pages/therapyGenerate/SelectChildrenPage.dart';
 import 'pages/Parent Awareness/parent_dashboard_main.dart';
 import 'pages/inputVoices/input_new_voices.dart';
 import 'pages/therapyStartScreen/therapy_start_screen.dart';
+import 'pages/therapy_data_management_page.dart';
+import 'services/upload_service.dart';
 
 
 void main() {
@@ -19,6 +21,7 @@ class VocaBuddyApp extends StatelessWidget {
       title: 'VocaBuddy',
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
+      scaffoldMessengerKey: UploadService.scaffoldMessengerKey,
       theme: ThemeData(
         fontFamily: 'Poppins',
       ),
@@ -28,7 +31,8 @@ class VocaBuddyApp extends StatelessWidget {
         '/view-reports': (context) =>  ParentDashboardMain(),
        // '/voice-therapy':(context) => VoiceRecordingApp(),
         '/attempt-session': (context) => const InstructionsScreen(),
-        '/upload-voice-recordings' : (context)=> UploadVoiceRecordingsScreen()
+        '/upload-voice-recordings' : (context)=> UploadVoiceRecordingsScreen(),
+        '/upload-therapy-data': (context) => const TherapyDataManagementPage(),
 
         // '/view-reports': (context) => const ViewReportsPage(),
         // later:
