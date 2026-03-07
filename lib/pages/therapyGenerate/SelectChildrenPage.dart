@@ -1,11 +1,7 @@
-// select_children_page.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'ActivityReviewPage.dart';
-import 'package:vocabuddy/api/api_client.dart';
-import 'dart:math';
-import 'WordSelectionPage.dart';
-
-
+import 'package:vocabuddy/api/activity_generate_api_client.dart';
+import 'package:vocabuddy/pages/therapyGenerate/ActivityReviewPage.dart';
 
 class SelectChildrenPage extends StatefulWidget {
   const SelectChildrenPage({Key? key}) : super(key: key);
@@ -14,71 +10,263 @@ class SelectChildrenPage extends StatefulWidget {
   State<SelectChildrenPage> createState() => _SelectChildrenPageState();
 }
 
-String _searchQuery = "";
-
-int _wordCount = 8;
-final List<int> _wordCountOptions = [3, 5, 8, 10];
-
-
 class _SelectChildrenPageState extends State<SelectChildrenPage> {
   final TextEditingController _promptController = TextEditingController();
-  final List<Map<String, dynamic>> _children = [
-    {'name': 'Harshana', 'age': 7, 'selected': false},
-    {'name': 'Dilum', 'age': 6, 'selected': false},
-    {'name': 'Iddamalgoda', 'age': 8, 'selected': false},
+  final ActivityGenerateApiClient _activityApi = ActivityGenerateApiClient();
 
-  ];
+  final List<Map<String, dynamic>> _children = [];
+  bool _isChildrenLoading = true;
+  String? _childrenLoadError;
+  String _searchQuery = '';
+  bool _isGenerating = false;
 
-  String _selectedActivityType = 'Phonological LvL 01';
-  final List<String> _activityTypes = [
-    'Phonological LvL 01',
-    'Phonological LvL 02',
-  ];
-
-  //fetch data
-  final ApiClient api = ApiClient();
-
-  int _levelFromText(String text) {
-    // "Phonological LvL 01" -> 1
-    if (text.contains("01")) return 1;
-    if (text.contains("02")) return 2;
-    return 3; // default fallback
+  @override
+  void initState() {
+    super.initState();
+    _loadChildren();
   }
 
-  String _extractLetter(String prompt) {
-    // very simple rule: take last Sinhala character in the prompt
-    // example: "Give me words starting with letter ස" -> "ස"
-    // If not found, return the whole prompt trimmed (last resort)
-    final trimmed = prompt.trim();
-    for (int i = trimmed.length - 1; i >= 0; i--) {
-      final ch = trimmed[i];
-      // Sinhala unicode range roughly: 0D80–0DFF
-      final code = ch.runes.first;
-      if (code >= 0x0D80 && code <= 0x0DFF) return ch;
+  Future<void> _loadChildren() async {
+    setState(() {
+      _isChildrenLoading = true;
+      _childrenLoadError = null;
+    });
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where(
+            'role',
+            whereIn: ['children', 'childran', 'child', 'Children', 'Childran'],
+          )
+          .get();
+
+      final children =
+          snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': doc.id,
+              'name': _parseName(data['name'], doc.id),
+              'age': _parseAge(data['age']),
+              'selected': false,
+            };
+          }).toList()..sort(
+            (a, b) => (a['name'] as String).toLowerCase().compareTo(
+              (b['name'] as String).toLowerCase(),
+            ),
+          );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _children
+          ..clear()
+          ..addAll(children);
+        _isChildrenLoading = false;
+      });
+    } on FirebaseException catch (e) {
+      debugPrint(
+        '[FIREBASE ERROR][loadChildren] code=${e.code} message=${e.message}',
+      );
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isChildrenLoading = false;
+        _childrenLoadError =
+            'Failed to load children [${e.code}]: ${e.message ?? e.toString()}';
+      });
+    } catch (e) {
+      debugPrint('[ERROR][loadChildren] $e');
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _isChildrenLoading = false;
+        _childrenLoadError = 'Failed to load children: $e';
+      });
     }
-    return trimmed.isNotEmpty ? trimmed : "ස";
   }
 
-  String _detectMode(String prompt) {
-    final p = prompt.toLowerCase();
-    if (p.contains("start") || p.contains("begin") || p.contains("initial")) {
-      return "starts_with";
-    }
-    if (p.contains("end") || p.contains("final")) {
-      return "ends_with";
-    }
-    if (p.contains("middle") || p.contains("medial") || p.contains("contain")) {
-      return "contains";
-    }
-    // default
-    return "starts_with";
+  String _parseName(dynamic rawName, String fallbackId) {
+    final value = rawName?.toString().trim() ?? '';
+    return value.isEmpty ? fallbackId : value;
   }
 
+  int _parseAge(dynamic rawAge) {
+    if (rawAge is int) {
+      return rawAge;
+    }
+    if (rawAge is num) {
+      return rawAge.toInt();
+    }
+    if (rawAge is String) {
+      return int.tryParse(rawAge.trim()) ?? 0;
+    }
+    return 0;
+  }
+
+  Future<void> _generateActivityForSelectedChild() async {
+    if (_isGenerating) {
+      return;
+    }
+
+    final selectedChild = _children.firstWhere(
+      (child) => child['selected'] == true,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (selectedChild.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a child first.')),
+      );
+      return;
+    }
+
+    final childId = selectedChild['id'].toString();
+    final letter = _promptController.text.trim();
+
+    if (letter.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter activity text.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      final response = await _activityApi.generateEasyActivity(letter: letter);
+      final dataList = (response['data'] is List)
+          ? response['data'] as List
+          : <dynamic>[];
+      String? createdSessionId;
+
+      try {
+        final sessionsRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(childId)
+            .collection('sessions');
+        final sessionDoc = sessionsRef.doc();
+        createdSessionId = sessionDoc.id;
+
+        final batch = FirebaseFirestore.instance.batch();
+        batch.set(sessionDoc, {
+          'request': {'letter': letter, 'level': 'easy'},
+          'status': response['status'] ?? 'success',
+          'total_found': response['total_found'] ?? dataList.length,
+          'objects_count': dataList.length,
+          'created_at': FieldValue.serverTimestamp(),
+        });
+
+        for (var index = 0; index < dataList.length; index++) {
+          final item = dataList[index];
+          if (item is! Map) {
+            continue;
+          }
+          final object = Map<String, dynamic>.from(item);
+          object['index'] = index;
+          object['created_at'] = FieldValue.serverTimestamp();
+
+          batch.set(sessionDoc.collection('objects').doc(), object);
+        }
+
+        await batch.commit();
+      } on FirebaseException catch (e) {
+        debugPrint(
+          '[FIREBASE ERROR][saveSession] code=${e.code} message=${e.message}',
+        );
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Firebase error [${e.code}]: ${e.message ?? e.toString()}',
+            ),
+          ),
+        );
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      if (createdSessionId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session was saved but session ID is missing.'),
+          ),
+        );
+        return;
+      }
+
+      final previewItems = dataList
+          .whereType<Map>()
+          .map((item) => {'text': (item['word'] ?? '').toString()})
+          .where((item) => item['text']!.isNotEmpty)
+          .toList();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ActivityReviewPage(
+            selectedChildren: [
+              {
+                'id': selectedChild['id'],
+                'name': selectedChild['name'],
+                'age': selectedChild['age'],
+              },
+            ],
+            activityType: 'Generate Activity',
+            prompt: letter,
+            apiPreview: {
+              'items': previewItems,
+              'target_letter': letter,
+              'returned_count': dataList.length,
+            },
+            firebaseChildId: childId,
+            firebaseSessionId: createdSessionId,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('[API ERROR][generateActivity] $e');
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('API error: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    bool hasSelectedChildren = _children.any((child) => child['selected']);
-    bool hasPrompt = _promptController.text.isNotEmpty;
+    final hasSelectedChild = _children.any(
+      (child) => child['selected'] == true,
+    );
+    final hasPrompt = _promptController.text.trim().isNotEmpty;
+
+    final filteredChildren = _children.where((child) {
+      if (_searchQuery.isEmpty) {
+        return true;
+      }
+      return child['name'].toString().toLowerCase().contains(_searchQuery);
+    }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
@@ -99,7 +287,11 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
             ],
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF64748B), size: 20),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Color(0xFF64748B),
+              size: 20,
+            ),
             onPressed: () => Navigator.pop(context),
             padding: EdgeInsets.zero,
           ),
@@ -107,11 +299,10 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Title
               const Text(
                 'Create Activity',
                 style: TextStyle(
@@ -123,11 +314,8 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Create a activity here',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF94A3B8),
-                ),
+                'Create an activity here',
+                style: TextStyle(fontSize: 14, color: Color(0xFF94A3B8)),
               ),
               const SizedBox(height: 32),
 
@@ -161,14 +349,12 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                       style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
                     ),
                     const SizedBox(height: 20),
-
-                    // 🔎 SEARCH BAR
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Color(0xFFE2E8F0)),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
                       child: TextField(
                         onChanged: (value) {
@@ -177,290 +363,153 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                           });
                         },
                         decoration: const InputDecoration(
-                          hintText: "Search child...",
+                          hintText: 'Search child...',
                           border: InputBorder.none,
                           icon: Icon(Icons.search, color: Color(0xFF94A3B8)),
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 20),
-
-                    // CHILDREN LIST (SCROLLABLE + FILTER)
                     SizedBox(
-                      height: 240, // limit height
-                      child: ListView.builder(
-                        itemCount: _children.length,
-                        itemBuilder: (context, index) {
-                          final child = _children[index];
-
-                          // FILTER
-                          if (_searchQuery.isNotEmpty &&
-                              !child['name'].toLowerCase().contains(_searchQuery)) {
-                            return const SizedBox.shrink();
-                          }
-
-                          final bool isSelected = child['selected'];
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: InkWell(
-                              onTap: () {
-                                setState(() {
-                                  // clear all selections
-                                  for (var c in _children) {
-                                    c['selected'] = false;
-                                  }
-                                  // select only current one
-                                  child['selected'] = true;
-                                });
-                              },
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? const Color(0xFFFFF4E6) : const Color(0xFFF8FAFC),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected ? const Color(0xFFFF9800) : Colors.transparent,
-                                    width: 1.5,
+                      height: 240,
+                      child: _isChildrenLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : _childrenLoadError != null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    _childrenLoadError!,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFFEF4444),
+                                    ),
                                   ),
+                                  const SizedBox(height: 10),
+                                  TextButton(
+                                    onPressed: _loadChildren,
+                                    child: const Text('Retry'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : filteredChildren.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No children found',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Color(0xFF94A3B8),
                                 ),
-                                child: Row(
-                                  children: [
-                                    // Avatar
-                                    Container(
-                                      width: 48,
-                                      height: 48,
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredChildren.length,
+                              itemBuilder: (context, index) {
+                                final child = filteredChildren[index];
+                                final isSelected = child['selected'] == true;
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        for (final c in _children) {
+                                          c['selected'] = false;
+                                        }
+                                        child['selected'] = true;
+                                      });
+                                    },
+                                    borderRadius: BorderRadius.circular(16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          child['name'][0].toUpperCase(),
-                                          style: const TextStyle(
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF64748B),
-                                          ),
+                                        color: isSelected
+                                            ? const Color(0xFFFFF4E6)
+                                            : const Color(0xFFF8FAFC),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? const Color(0xFFFF9800)
+                                              : Colors.transparent,
+                                          width: 1.5,
                                         ),
                                       ),
-                                    ),
-
-                                    const SizedBox(width: 12),
-
-                                    // Name & Age
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                      child: Row(
                                         children: [
-                                          Text(
-                                            child['name'],
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15,
-                                              color: Color(0xFF334155),
+                                          Container(
+                                            width: 48,
+                                            height: 48,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: const Color(0xFFE2E8F0),
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                child['name'][0]
+                                                    .toString()
+                                                    .toUpperCase(),
+                                                style: const TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Color(0xFF64748B),
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            'Age: ${child['age']}',
-                                            style: const TextStyle(
-                                              fontSize: 13,
-                                              color: Color(0xFF94A3B8),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  child['name'].toString(),
+                                                  style: const TextStyle(
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 15,
+                                                    color: Color(0xFF334155),
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  'Age: ${child['age']}',
+                                                  style: const TextStyle(
+                                                    fontSize: 13,
+                                                    color: Color(0xFF94A3B8),
+                                                  ),
+                                                ),
+                                              ],
                                             ),
+                                          ),
+                                          Icon(
+                                            isSelected
+                                                ? Icons.check_circle
+                                                : Icons.circle_outlined,
+                                            color: isSelected
+                                                ? const Color(0xFFFF9800)
+                                                : const Color(0xFFCBD5E1),
+                                            size: 24,
                                           ),
                                         ],
                                       ),
                                     ),
-
-                                    // Select Icon
-                                    Icon(
-                                      isSelected ? Icons.check_circle : Icons.circle_outlined,
-                                      color: isSelected ? const Color(0xFFFF9800) : const Color(0xFFCBD5E1),
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                                  ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Activity Level Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E6),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.auto_stories_outlined,
-                        color: Color(0xFF64748B),
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Activity Level',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _selectedActivityType,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF94A3B8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFFFF9800),
-                        size: 28,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      offset: const Offset(0, 8),
-                      onSelected: (String value) {
-                        setState(() {
-                          _selectedActivityType = value;
-                        });
-                      },
-                      itemBuilder: (BuildContext context) {
-                        return _activityTypes.map((String type) {
-                          return PopupMenuItem<String>(
-                            value: type,
-                            child: Text(type),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Word Count Card
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4E6),
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.format_list_numbered,
-                        color: Color(0xFF64748B),
-                        size: 26,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Word Count',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$_wordCount words',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF94A3B8),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    PopupMenuButton<int>(
-                      icon: const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: Color(0xFFFF9800),
-                        size: 28,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      offset: const Offset(0, 8),
-                      onSelected: (int value) {
-                        setState(() {
-                          _wordCount = value;
-                        });
-                      },
-                      itemBuilder: (BuildContext context) {
-                        return _wordCountOptions.map((int c) {
-                          return PopupMenuItem<int>(
-                            value: c,
-                            child: Text("$c words"),
-                          );
-                        }).toList();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-
-              // Activity Prompt Card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -507,7 +556,7 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Type your Phonological issue here',
+                                'Type letter/word to generate easy activity',
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF94A3B8),
@@ -532,7 +581,7 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                           color: Color(0xFF334155),
                         ),
                         decoration: InputDecoration(
-                          hintText: 'e.g., Give me words starting with letter /t/',
+                          hintText: 'e.g., ත  or  water',
                           hintStyle: const TextStyle(
                             color: Color(0xFFCBD5E1),
                             fontSize: 14,
@@ -545,7 +594,7 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.all(16),
                         ),
-                        onChanged: (value) => setState(() {}),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                   ],
@@ -553,126 +602,86 @@ class _SelectChildrenPageState extends State<SelectChildrenPage> {
               ),
               const SizedBox(height: 32),
 
-              // Generate Button
-              Container(
-                width: double.infinity,
-                height: 60,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: (hasSelectedChildren && hasPrompt)
-                      ? const LinearGradient(
-                    colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  )
-                      : null,
-                  color: (hasSelectedChildren && hasPrompt)
-                      ? null
-                      : const Color(0xFFE2E8F0),
-                  boxShadow: (hasSelectedChildren && hasPrompt)
-                      ? [
-                    BoxShadow(
-                      color: const Color(0xFFFF9800).withOpacity(0.4),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ]
-                      : [],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                      onTap: (hasSelectedChildren && hasPrompt)
-                          ? () async {
-                        final selectedChild = _children.firstWhere((c) => c['selected'] == true);
-                        final childId = selectedChild['name']; // for now using name as id
+              Builder(
+                builder: (context) {
+                  final canGenerate =
+                      hasSelectedChild && hasPrompt && !_isGenerating;
+                  final hasRequiredInput = hasSelectedChild && hasPrompt;
 
-                        final prompt = _promptController.text;
-                        final letter = _extractLetter(prompt);
-                        final mode = _detectMode(prompt);
-                        final level = _levelFromText(_selectedActivityType);
-
-                        // you can change count later from UI, for now fixed
-                        final count = _wordCount;
-
-
-                        try {
-                          final data = await api.previewActivity(
-                            childId: childId,
-                            letter: letter,
-                            mode: mode,
-                            level: level,
-                            count: count,
-                          );
-
-                          final missing = (data["missing_count"] ?? 0) as int;
-
-                          if (missing > 0) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => WordSelectionPage(
-                                  selectedChildren: _children.where((child) => child['selected']).toList(),
-                                  activityType: _selectedActivityType,
-                                  prompt: prompt,
-                                  preview: data,
-                                  childId: childId,
-                                  letter: letter,
-                                  mode: mode,
-                                  level: level,
-                                  count: count,
-                                ),
-                              ),
-                            );
-                          } else {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ActivityReviewPage(
-                                  selectedChildren: _children.where((child) => child['selected']).toList(),
-                                  activityType: _selectedActivityType,
-                                  prompt: prompt,
-                                  apiPreview: data,
-                                ),
-                              ),
-                            );
-                          }
-
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("API error: $e")),
-                          );
-                        }
-                      }
+                  return Container(
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: canGenerate
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFF9800), Color(0xFFFF6F00)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
                           : null,
-
-                    borderRadius: BorderRadius.circular(20),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Generate Activity',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                              color: (hasSelectedChildren && hasPrompt)
-                                  ? Colors.white
-                                  : const Color(0xFF94A3B8),
-                            ),
+                      color: canGenerate ? null : const Color(0xFFE2E8F0),
+                      boxShadow: canGenerate
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFFF9800).withOpacity(0.4),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: canGenerate
+                            ? _generateActivityForSelectedChild
+                            : null,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_isGenerating)
+                                const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Color(0xFF94A3B8),
+                                    ),
+                                  ),
+                                ),
+                              if (_isGenerating) const SizedBox(width: 10),
+                              Text(
+                                _isGenerating
+                                    ? 'Generating Activity...'
+                                    : 'Generate Activity',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                  color: canGenerate
+                                      ? Colors.white
+                                      : (hasRequiredInput
+                                            ? const Color(0xFF64748B)
+                                            : const Color(0xFF94A3B8)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (canGenerate && !_isGenerating)
+                                const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          if (hasSelectedChildren && hasPrompt)
-                            const Icon(
-                              Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
             ],

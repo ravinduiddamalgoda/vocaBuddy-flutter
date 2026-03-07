@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "649374143557",
+    "project_id": "huruwa-4b852",
+    "storage_bucket": "huruwa-4b852.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:649374143557:android:d98d02b9a1672e6f777f2c",
+        "android_client_info": {
+          "package_name": "com.example.vocabuddy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcscQa1npFijnD2J07hOnHkcJec5eitE0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
