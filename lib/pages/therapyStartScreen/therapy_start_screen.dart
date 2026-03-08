@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:vocabuddy/pages/activitySummaryScreen/activity_summary_page.dart';
+import 'package:vocabuddy/pages/selectSessionScreen/select_session_page.dart';
 
 class InstructionsScreen extends StatefulWidget {
   const InstructionsScreen({super.key});
@@ -87,15 +87,16 @@ class _InstructionsScreenState extends State<InstructionsScreen>
                 FadeTransition(
                   opacity: _headerController,
                   child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, -0.12),
-                      end: Offset.zero,
-                    ).animate(
-                      CurvedAnimation(
-                        parent: _headerController,
-                        curve: Curves.easeOut,
-                      ),
-                    ),
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(0, -0.12),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: _headerController,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
                     child: _buildPremiumHeader(),
                   ),
                 ),
@@ -194,11 +195,7 @@ class _InstructionsScreenState extends State<InstructionsScreen>
               color: Colors.white.withOpacity(0.22),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.mic_rounded,
-              color: Colors.white,
-              size: 28,
-            ),
+            child: const Icon(Icons.mic_rounded, color: Colors.white, size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -284,9 +281,7 @@ class _InstructionsScreenState extends State<InstructionsScreen>
 
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const ActivitySummaryScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const SelectSessionPage()),
           );
         },
         child: Row(
@@ -342,7 +337,7 @@ class _StepCard extends StatelessWidget {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 18,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -406,11 +401,7 @@ class _StepCard extends StatelessWidget {
               color: const Color(0xFFFFF3E0),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: const Color(0xFFFF9500),
-              size: 22,
-            ),
+            child: Icon(icon, color: const Color(0xFFFF9500), size: 22),
           ),
         ],
       ),
