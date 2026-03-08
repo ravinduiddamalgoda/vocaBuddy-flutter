@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 /// =======================
 /// MAIN SCREEN
@@ -16,13 +22,17 @@ class UploadVoiceRecordingsScreen extends StatefulWidget {
 /// MODELS
 /// =======================
 class Recording {
+  final String id;
   final String name;
-  final String path;
+  final String audioBase64;
+  final String type;
   final DateTime dateAdded;
 
   Recording({
+    required this.id,
     required this.name,
-    required this.path,
+    required this.audioBase64,
+    required this.type,
     required this.dateAdded,
   });
 }
@@ -31,15 +41,8 @@ class Folder {
   final String id;
   final String name;
   final DateTime createdAt;
-  final List<Recording> correctRecordings;
-  final List<Recording> incorrectRecordings;
 
-  Folder({
-    required this.id,
-    required this.name,
-    required this.createdAt,
-  })  : correctRecordings = [],
-        incorrectRecordings = [];
+  Folder({required this.id, required this.name, required this.createdAt});
 }
 
 /// =======================
@@ -47,13 +50,57 @@ class Folder {
 /// =======================
 class _UploadVoiceRecordingsScreenState
     extends State<UploadVoiceRecordingsScreen> {
-  final List<Folder> folders = [];
+  Future<void> _createFolderInFirestore(String folderTitle) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('User not logged in.')));
+      return;
+    }
+
+    final name = folderTitle.trim();
+    if (name.isEmpty) {
+      return;
+    }
+    if (name.contains('/')) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Folder title cannot contain "/"')),
+      );
+      return;
+    }
+
+    final folderRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('voice-record')
+        .doc(name);
+
+    final existing = await folderRef.get();
+    if (existing.exists) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Folder already exists.')));
+      return;
+    }
+
+    await folderRef.set({
+      'name': name,
+      'created_at': FieldValue.serverTimestamp(),
+      'updated_at': FieldValue.serverTimestamp(),
+      'correct_count': 0,
+      'incorrect_count': 0,
+    });
+  }
 
   void _createNewFolder() {
     showDialog(
       context: context,
       builder: (context) {
-        String folderName = '';
+        final folderController = TextEditingController();
         return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -63,7 +110,7 @@ class _UploadVoiceRecordingsScreenState
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: TextField(
-            onChanged: (value) => folderName = value,
+            controller: folderController,
             decoration: InputDecoration(
               hintText: 'ෆෝල්ඩර නම ඇතුළත් කරන්න',
               border: OutlineInputBorder(
@@ -88,19 +135,13 @@ class _UploadVoiceRecordingsScreenState
                   borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              onPressed: () {
-                if (folderName.trim().isNotEmpty) {
-                  setState(() {
-                    folders.add(
-                      Folder(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        name: folderName.trim(),
-                        createdAt: DateTime.now(),
-                      ),
-                    );
-                  });
-                  Navigator.pop(context);
+              onPressed: () async {
+                final folderName = folderController.text.trim();
+                if (folderName.isEmpty) {
+                  return;
                 }
+                Navigator.pop(context);
+                await _createFolderInFirestore(folderName);
               },
               child: const Text('සාදන්න'),
             ),
@@ -110,20 +151,34 @@ class _UploadVoiceRecordingsScreenState
     );
   }
 
-  void _openFolder(Folder folder) {
+  void _openFolder(Folder folder, String userId) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => FolderDetailPage(
-          folder: folder,
-          onUpdate: () => setState(() {}),
+          userId: userId,
+          folderId: folder.id,
+          folderName: folder.name,
         ),
       ),
     );
   }
 
+  DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final userId = user?.uid ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDFDFD),
 
@@ -167,11 +222,7 @@ class _UploadVoiceRecordingsScreenState
                       color: Color(0xFFFFA726),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
-                      Icons.mic,
-                      size: 40,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.mic, size: 40, color: Colors.white),
                   ),
                   const SizedBox(width: 18),
                   const Expanded(
@@ -196,31 +247,98 @@ class _UploadVoiceRecordingsScreenState
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
 
             /// FOLDERS LIST
             Expanded(
-              child: folders.isEmpty
+              child: userId.isEmpty
                   ? Center(
-                child: Text(
-                  "No folders yet. Create your first folder!",
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 14,
-                  ),
-                ),
-              )
-                  : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: folders.length,
-                itemBuilder: (context, index) {
-                  final folder = folders[index];
-                  return _buildFolderCard(folder);
-                },
-              ),
+                      child: Text(
+                        "User not logged in.",
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                      ),
+                    )
+                  : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(userId)
+                          .collection('voice-record')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFFFF6D00),
+                            ),
+                          );
+                        }
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text(
+                              "Failed to load folders.",
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          );
+                        }
+
+                        final docs = (snapshot.data?.docs ?? []).toList()
+                          ..sort((a, b) {
+                            final aDate = _parseDate(a.data()['created_at']);
+                            final bDate = _parseDate(b.data()['created_at']);
+                            return bDate.compareTo(aDate);
+                          });
+
+                        if (docs.isEmpty) {
+                          return Center(
+                            child: Text(
+                              "No folders yet. Create your first folder!",
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 14,
+                              ),
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: docs.length,
+                          itemBuilder: (context, index) {
+                            final doc = docs[index];
+                            final data = doc.data();
+                            final name = (data['name'] ?? doc.id).toString();
+                            final createdAt = _parseDate(data['created_at']);
+                            final correct = (data['correct_count'] is num)
+                                ? (data['correct_count'] as num).toInt()
+                                : 0;
+                            final incorrect = (data['incorrect_count'] is num)
+                                ? (data['incorrect_count'] as num).toInt()
+                                : 0;
+                            final total = correct + incorrect;
+
+                            return _buildFolderCard(
+                              Folder(
+                                id: doc.id,
+                                name: name,
+                                createdAt: createdAt,
+                              ),
+                              totalRecordings: total,
+                              userId: userId,
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -231,20 +349,18 @@ class _UploadVoiceRecordingsScreenState
         onPressed: _createNewFolder,
         backgroundColor: const Color(0xFFFF6D00),
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
-          'නව ෆෝල්ඩරය',
-          style: TextStyle(color: Colors.white),
-        ),
+        label: const Text('නව ෆෝල්ඩරය', style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
-  Widget _buildFolderCard(Folder folder) {
-    final total =
-        folder.correctRecordings.length + folder.incorrectRecordings.length;
-
+  Widget _buildFolderCard(
+    Folder folder, {
+    required int totalRecordings,
+    required String userId,
+  }) {
     return GestureDetector(
-      onTap: () => _openFolder(folder),
+      onTap: () => _openFolder(folder, userId),
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         padding: const EdgeInsets.all(18),
@@ -290,17 +406,17 @@ class _UploadVoiceRecordingsScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "$total recordings",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
+                    "$totalRecordings recordings",
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                size: 16, color: Color(0xFFFF6D00)),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Color(0xFFFF6D00),
+            ),
           ],
         ),
       ),
@@ -312,13 +428,15 @@ class _UploadVoiceRecordingsScreenState
 /// FOLDER DETAIL PAGE
 /// =======================
 class FolderDetailPage extends StatefulWidget {
-  final Folder folder;
-  final VoidCallback onUpdate;
+  final String userId;
+  final String folderId;
+  final String folderName;
 
   const FolderDetailPage({
     super.key,
-    required this.folder,
-    required this.onUpdate,
+    required this.userId,
+    required this.folderId,
+    required this.folderName,
   });
 
   @override
@@ -326,41 +444,172 @@ class FolderDetailPage extends StatefulWidget {
 }
 
 class _FolderDetailPageState extends State<FolderDetailPage> {
-  String selectedTab = 'correct';
+  String selectedTab = 'right';
+  bool _isUploading = false;
+  late final AudioPlayer _audioPlayer;
+  String? _playingRecordingId;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (!mounted) return;
+      setState(() {
+        _playingRecordingId = null;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  DateTime _parseDate(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+    if (value is DateTime) {
+      return value;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  String _sanitizeBase64(String input) {
+    var cleaned = input.trim();
+    if (cleaned.startsWith('data:')) {
+      final commaIndex = cleaned.indexOf(',');
+      if (commaIndex >= 0 && commaIndex < cleaned.length - 1) {
+        cleaned = cleaned.substring(commaIndex + 1);
+      }
+    }
+    return cleaned.replaceAll(RegExp(r'\s+'), '');
+  }
+
+  Future<void> _playRecording(Recording recording) async {
+    try {
+      final base64Audio = _sanitizeBase64(recording.audioBase64);
+      if (base64Audio.isEmpty) {
+        throw Exception('Audio is empty');
+      }
+
+      final bytes = base64Decode(base64.normalize(base64Audio));
+      if (bytes.isEmpty) {
+        throw Exception('Decoded audio is empty');
+      }
+
+      var extension = 'wav';
+      final dotIndex = recording.name.lastIndexOf('.');
+      if (dotIndex > 0 && dotIndex < recording.name.length - 1) {
+        extension = recording.name.substring(dotIndex + 1).toLowerCase();
+      }
+
+      final tempPath =
+          '${Directory.systemTemp.path}/vocabuddy_play_${recording.id}_${DateTime.now().microsecondsSinceEpoch}.$extension';
+      final tempFile = File(tempPath);
+      await tempFile.writeAsBytes(bytes, flush: true);
+
+      await _audioPlayer.stop();
+      await _audioPlayer.play(DeviceFileSource(tempPath));
+
+      if (!mounted) return;
+      setState(() {
+        _playingRecordingId = recording.id;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Audio playback failed: $e')));
+    }
+  }
 
   Future<void> _pickAudioFile(bool isCorrect) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.platform.pickFiles(
       type: FileType.audio,
       allowMultiple: true,
     );
 
-    if (result != null) {
-      setState(() {
-        for (var file in result.files) {
-          final recording = Recording(
-            name: file.name,
-            path: file.path ?? '',
-            dateAdded: DateTime.now(),
-          );
+    if (result == null || result.files.isEmpty) {
+      return;
+    }
 
-          if (isCorrect) {
-            widget.folder.correctRecordings.add(recording);
-          } else {
-            widget.folder.incorrectRecordings.add(recording);
-          }
+    final type = isCorrect ? 'right' : 'wrong';
+    setState(() {
+      _isUploading = true;
+    });
+
+    try {
+      final folderRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('voice-record')
+          .doc(widget.folderId);
+
+      final batch = FirebaseFirestore.instance.batch();
+      var uploadedCount = 0;
+
+      for (final file in result.files) {
+        final filePath = (file.path ?? '').trim();
+        if (filePath.isEmpty) {
+          continue;
         }
-      });
 
-      widget.onUpdate();
+        final bytes = await File(filePath).readAsBytes();
+        if (bytes.isEmpty) {
+          continue;
+        }
+
+        final audioBase64 = base64Encode(bytes);
+        final recordRef = folderRef.collection('records').doc();
+        batch.set(recordRef, {
+          'name': file.name,
+          'audio_base64': audioBase64,
+          'type': type,
+          'size_bytes': bytes.length,
+          'created_at': FieldValue.serverTimestamp(),
+        });
+        uploadedCount++;
+      }
+
+      if (uploadedCount == 0) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No valid audio files selected.')),
+        );
+        return;
+      }
+
+      final countField = type == 'right' ? 'correct_count' : 'incorrect_count';
+      batch.set(folderRef, {
+        countField: FieldValue.increment(uploadedCount),
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      await batch.commit();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Uploaded $uploadedCount recording(s).')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final recordings = selectedTab == 'correct'
-        ? widget.folder.correctRecordings
-        : widget.folder.incorrectRecordings;
-
     return Scaffold(
       backgroundColor: const Color(0xFFFDFDFD),
 
@@ -374,7 +623,7 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
         ),
         centerTitle: true,
         title: Text(
-          widget.folder.name,
+          widget.folderName,
           style: const TextStyle(
             color: Color(0xFF3B1F47),
             fontWeight: FontWeight.bold,
@@ -398,16 +647,16 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
               children: [
                 Expanded(
                   child: _tabButton(
-                    label: "නිවැරදි",
-                    value: "correct",
+                    label: "Right",
+                    value: "right",
                     color: const Color(0xFF34A853),
                     icon: Icons.check_circle,
                   ),
                 ),
                 Expanded(
                   child: _tabButton(
-                    label: "වැරදි",
-                    value: "incorrect",
+                    label: "Wrong",
+                    value: "wrong",
                     color: Colors.red,
                     icon: Icons.cancel,
                   ),
@@ -420,22 +669,68 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
 
           /// Recording list
           Expanded(
-            child: recordings.isEmpty
-                ? Center(
-              child: Text(
-                "තවම පටිගත කිරීම් නැත",
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
-                ),
-              ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: recordings.length,
-              itemBuilder: (context, index) {
-                final recording = recordings[index];
-                return _recordingCard(context, recording);
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(widget.userId)
+                  .collection('voice-record')
+                  .doc(widget.folderId)
+                  .collection('records')
+                  .where('type', isEqualTo: selectedTab)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFFFF6D00)),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      "Failed to load recordings.",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                }
+
+                final docs = (snapshot.data?.docs ?? []).toList()
+                  ..sort((a, b) {
+                    final aDate = _parseDate(a.data()['created_at']);
+                    final bDate = _parseDate(b.data()['created_at']);
+                    return bDate.compareTo(aDate);
+                  });
+
+                if (docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      "තවම පටිගත කිරීම් නැත",
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data();
+                    final recording = Recording(
+                      id: doc.id,
+                      name: (data['name'] ?? 'Recording').toString(),
+                      audioBase64: (data['audio_base64'] ?? '').toString(),
+                      type: (data['type'] ?? '').toString(),
+                      dateAdded: _parseDate(data['created_at']),
+                    );
+                    return _recordingCard(context, recording);
+                  },
+                );
               },
             ),
           ),
@@ -443,11 +738,22 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
       ),
 
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _pickAudioFile(selectedTab == 'correct'),
+        onPressed: _isUploading
+            ? null
+            : () => _pickAudioFile(selectedTab == 'right'),
         backgroundColor: const Color(0xFFFF6D00),
-        icon: const Icon(Icons.add, color: Colors.white),
+        icon: _isUploading
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.add, color: Colors.white),
         label: const Text(
-          "පටිගත කිරීම එක් කරන්න",
+          "Upload Audio",
           style: TextStyle(color: Colors.white),
         ),
       ),
@@ -483,7 +789,7 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
                 fontSize: 13,
                 color: isSelected ? color : Colors.grey,
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -506,7 +812,10 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 10,
+        ),
         leading: Container(
           width: 44,
           height: 44,
@@ -526,18 +835,16 @@ class _FolderDetailPageState extends State<FolderDetailPage> {
         ),
         subtitle: Text(
           "${recording.dateAdded.day}/${recording.dateAdded.month}/${recording.dateAdded.year}",
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.play_circle_fill, color: Color(0xFFFF6D00)),
-          onPressed: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Audio playback feature')),
-            );
-          },
+          icon: Icon(
+            _playingRecordingId == recording.id
+                ? Icons.pause_circle_filled
+                : Icons.play_circle_fill,
+            color: const Color(0xFFFF6D00),
+          ),
+          onPressed: () => _playRecording(recording),
         ),
       ),
     );
